@@ -68,10 +68,30 @@ SQL plano). Decisiones no explícitas en el pedido original, agregadas por neces
 - `costos_cliente.saldo` sí es una columna libre (no generada), porque depende de
   pagos en otras tablas (`cuotas`/`caja`) — la mantiene la lógica de aplicación.
 
+## Autenticación
+
+JWT en `Authorization: Bearer <token>` (no cookies), expiración 8h. Middlewares en
+`src/middleware/`: `authenticate` (valida el JWT y vuelve a consultar `usuarios` en
+cada request para que una cuenta desactivada deje de funcionar al instante, no recién
+cuando expire el token) y `authorize(...roles)` para RBAC. Login normaliza el email a
+minúsculas y compara siempre contra un hash bcrypt (real o "dummy") para no filtrar,
+por tiempo de respuesta, si un email existe. Rate limit de 10 intentos/15min en
+`/api/auth/login`.
+
+Cuentas `admin`/`vendedor` se crean vía `POST /api/usuarios` (solo admin). Cuentas
+`cliente` NO se crean ahí — se generan junto con el alta de cliente (punto 4). El
+primer admin se crea con `npm run seed:admin --workspace backend -- "Nombre" email
+password`, ya que la API de creación de usuarios requiere ser admin.
+
+`POST /api/usuarios/:id/reset-password` (admin) genera una contraseña temporal nueva
+y la devuelve una única vez en la respuesta — nunca se puede leer la contraseña
+actual (regla de negocio 4). Envío de esa contraseña por email (SMTP) queda
+pendiente para cuando se configure `info@cosmostrak.com.py`.
+
 ## Estado del proyecto
 
-Al `2026-07-27`: estructura del monorepo y conexión a Postgres en Railway (punto 1)
-y migración inicial del esquema completo (punto 2) completados y verificados contra
-la base real de Railway. Siguientes pasos planeados: autenticación con roles, CRUD de
-clientes (accesible para vendedor), generación automática de cuotas al crear un
-contrato.
+Al `2026-07-27`: estructura del monorepo y conexión a Postgres en Railway (punto 1),
+migración inicial del esquema completo (punto 2), y autenticación con roles (punto 3)
+completados y verificados end-to-end contra la base real de Railway. Siguientes pasos
+planeados: CRUD de clientes (accesible para vendedor), generación automática de
+cuotas al crear un contrato.

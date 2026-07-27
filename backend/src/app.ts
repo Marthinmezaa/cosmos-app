@@ -3,6 +3,9 @@ import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
 import { env } from "./config/env";
+import { errorHandler } from "./middleware/error-handler";
+import { authRouter } from "./modules/auth/auth.routes";
+import { usuariosRouter } from "./modules/usuarios/usuarios.routes";
 import { healthRouter } from "./routes/health.route";
 
 export function createApp() {
@@ -14,6 +17,10 @@ export function createApp() {
   app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));
 
   app.use(healthRouter);
+  app.use("/api/auth", authRouter);
+  app.use("/api/usuarios", usuariosRouter);
+
+  app.use(errorHandler);
 
   return app;
 }

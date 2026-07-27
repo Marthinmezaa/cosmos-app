@@ -23,6 +23,7 @@ npm install
 # Backend
 cp backend/.env.example backend/.env   # completar DATABASE_URL y JWT_SECRET
 npm run migrate --workspace backend    # aplica las migraciones
+npm run seed:admin --workspace backend -- "Nombre Admin" admin@cosmostrak.com.py 'ContraseñaSegura123!'
 npm run dev:backend
 
 # Frontend (en otra terminal)
