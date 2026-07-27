@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/Marthinmezaa/cosmos-app/compare/backend-v1.1.0...backend-v1.2.0) (2026-07-27)
+
+
+### Features
+
+* **contratos:** generacion automatica de cuotas al crear un contrato ([#7](https://github.com/Marthinmezaa/cosmos-app/issues/7)) ([1694efa](https://github.com/Marthinmezaa/cosmos-app/commit/1694efab4a9a36dd59ef2d3ee8a83d181ae63eaa))
+
 ## [1.1.0](https://github.com/Marthinmezaa/cosmos-app/compare/backend-v1.0.0...backend-v1.1.0) (2026-07-27)
 
 
