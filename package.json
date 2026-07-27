@@ -1,0 +1,22 @@
+{
+  "name": "cosmos-app",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Sistema administrativo web para Cosmostrak (rastreo GPS vehicular)",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev --workspace backend",
+    "dev:frontend": "npm run dev --workspace frontend",
+    "build:backend": "npm run build --workspace backend",
+    "build:frontend": "npm run build --workspace frontend",
+    "lint:backend": "npm run lint --workspace backend",
+    "lint:frontend": "npm run lint --workspace frontend",
+    "migrate": "npm run migrate --workspace backend"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

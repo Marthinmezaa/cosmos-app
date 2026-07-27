@@ -1,0 +1,5 @@
+{
+  "migrations-dir": "migrations",
+  "migration-file-language": "sql",
+  "database-url-var": "DATABASE_URL"
+}
