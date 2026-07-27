@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/Marthinmezaa/cosmos-app/compare/backend-v1.0.0...backend-v1.1.0) (2026-07-27)
+
+
+### Features
+
+* **clientes:** CRUD de clientes con alta transaccional (cliente+vehiculo+equipo+fotos) ([#5](https://github.com/Marthinmezaa/cosmos-app/issues/5)) ([1c3380b](https://github.com/Marthinmezaa/cosmos-app/commit/1c3380b366f9cb662bb9539dfe862086fa175a71))
+
 ## 1.0.0 (2026-07-27)
 
 
