@@ -51,9 +51,27 @@ una empresa de rastreo GPS vehicular en Paraguay.
 - Versionado y changelog automático vía `release-please.yml` (paquetes `backend` y
   `frontend` versionados independientemente, ver `release-please-config.json`).
 
+## Modelo de datos
+
+Migración inicial en `backend/migrations/..._initial-schema.sql` (`node-pg-migrate`,
+SQL plano). Decisiones no explícitas en el pedido original, agregadas por necesidad:
+
+- `usuarios.cliente_id` (nullable, UNIQUE): vincula la cuenta de login de un cliente
+  con su registro en `clientes`. Constraint `chk_usuarios_cliente_rol` obliga a que
+  esté seteado si y solo si `rol = 'cliente'`.
+- `cuotas.estado` solo admite `pendiente`/`pagada` (hechos verificables). La mora o el
+  vencimiento NO se almacenan — se calculan en cada consulta comparando
+  `fecha_vencimiento` con `CURRENT_DATE` (regla de negocio 6, sin tablas redundantes).
+- `clientes.id_cliente_code` y `costos_cliente.costo_total` son columnas `GENERATED
+  ALWAYS AS ... STORED`: Postgres las calcula solas, nunca hay que sincronizarlas
+  desde el código de aplicación.
+- `costos_cliente.saldo` sí es una columna libre (no generada), porque depende de
+  pagos en otras tablas (`cuotas`/`caja`) — la mantiene la lógica de aplicación.
+
 ## Estado del proyecto
 
-Ver el chat/PRs para el estado actual. En bootstrap inicial (estructura + conexión DB)
-al `2026-07-27`. Los siguientes pasos planeados: migraciones del esquema completo,
-autenticación con roles, CRUD de clientes (accesible para vendedor), generación
-automática de cuotas al crear un contrato.
+Al `2026-07-27`: estructura del monorepo y conexión a Postgres en Railway (punto 1)
+y migración inicial del esquema completo (punto 2) completados y verificados contra
+la base real de Railway. Siguientes pasos planeados: autenticación con roles, CRUD de
+clientes (accesible para vendedor), generación automática de cuotas al crear un
+contrato.
