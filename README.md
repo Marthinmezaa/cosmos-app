@@ -48,3 +48,4 @@ npm run dev:frontend
   `devsecops.yml` (lint, auditoría de dependencias, escaneo de secretos) → recién ahí
   se mergea.
 - Versionado y changelog se generan automáticamente vía `release-please`.
+
