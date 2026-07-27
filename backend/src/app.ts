@@ -5,6 +5,7 @@ import morgan from "morgan";
 import { env } from "./config/env";
 import { errorHandler } from "./middleware/error-handler";
 import { authRouter } from "./modules/auth/auth.routes";
+import { clientesRouter } from "./modules/clientes/clientes.routes";
 import { usuariosRouter } from "./modules/usuarios/usuarios.routes";
 import { healthRouter } from "./routes/health.route";
 
@@ -19,6 +20,7 @@ export function createApp() {
   app.use(healthRouter);
   app.use("/api/auth", authRouter);
   app.use("/api/usuarios", usuariosRouter);
+  app.use("/api/clientes", clientesRouter);
 
   app.use(errorHandler);
 

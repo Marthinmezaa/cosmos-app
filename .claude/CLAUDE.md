@@ -88,10 +88,29 @@ y la devuelve una única vez en la respuesta — nunca se puede leer la contrase
 actual (regla de negocio 4). Envío de esa contraseña por email (SMTP) queda
 pendiente para cuando se configure `info@cosmostrak.com.py`.
 
+## CRUD de clientes
+
+`POST /api/clientes` (admin o vendedor) crea cliente + vehículo + equipo + fotos en
+una sola transacción (todo o nada). El resto de operaciones (`GET /api/clientes`,
+`GET /api/clientes/:id`, `PATCH /api/clientes/:id`, `.../vehiculo`, `.../equipo`) son
+solo para admin — el vendedor, por regla de negocio, únicamente da de alta, nunca
+lista ni edita clientes existentes.
+
+Decisión de alcance (confirmada con el usuario): el alta de cliente NO crea el
+contrato. `contratos.vendedor_id` (autocompletado con el usuario logueado, regla de
+negocio 5) y la generación de cuotas se resuelven en un paso aparte (punto 5).
+
+Las fotos se reciben como URLs ya subidas (`url_r2`) — la integración real con
+Cloudflare R2 (presigned upload) todavía no está conectada.
+
+Violaciones de UNIQUE (cédula, chapa, chasis, IMEI, número de chip) se traducen a
+mensajes en español vía `utils/db-errors.ts` en vez de exponer el error crudo de
+Postgres.
+
 ## Estado del proyecto
 
 Al `2026-07-27`: estructura del monorepo y conexión a Postgres en Railway (punto 1),
-migración inicial del esquema completo (punto 2), y autenticación con roles (punto 3)
-completados y verificados end-to-end contra la base real de Railway. Siguientes pasos
-planeados: CRUD de clientes (accesible para vendedor), generación automática de
-cuotas al crear un contrato.
+migración inicial del esquema completo (punto 2), autenticación con roles (punto 3),
+y CRUD de clientes (punto 4) completados y verificados end-to-end contra la base real
+de Railway. Siguiente paso planeado: lógica de generación automática de cuotas al
+crear un contrato (punto 5).
