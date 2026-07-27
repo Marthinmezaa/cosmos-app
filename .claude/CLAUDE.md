@@ -107,10 +107,36 @@ Violaciones de UNIQUE (cédula, chapa, chasis, IMEI, número de chip) se traduce
 mensajes en español vía `utils/db-errors.ts` en vez de exponer el error crudo de
 Postgres.
 
+## Contratos y generación de cuotas
+
+Confirmado con el usuario: el servicio es una **suscripción mensual indefinida**, no
+un plan de N cuotas fijas. Esto define todo el diseño:
+
+- `POST /api/contratos` (admin o vendedor): crea el contrato y su **cuota #1** en la
+  misma transacción (`fecha_vencimiento = fecha_inicio`, `monto_a_cobrar =
+  precio_promocional`). `vendedor_id` sale siempre de `req.user`, nunca del body
+  (regla de negocio 5) — probado enviando un `vendedorId` falso y confirmando que se
+  ignora. Rechaza clientes inexistentes (404) o suspendidos (400).
+- `POST /api/contratos/:id/pagos` (solo admin, por manejo de dinero): paga
+  `cantidadMeses` (default 1) cuotas. Cada pago decide el monto en SQL, no en JS
+  (`utils` no interviene, ver `cuotas.repository.ts`): si `fechaPago <=
+  fecha_vencimiento + 5 días` cobra `precio_promocional`, si no, `precio_normal`
+  como multa (regla 1). **No hace falta lógica aparte para "pago adelantado" (regla
+  2)**: pagar una cuota futura antes de su vencimiento siempre cae dentro de la
+  ventana con la misma fórmula, así que el precio promocional sale solo.
+- Después de cada pago, si no queda ninguna cuota `pendiente` se genera la
+  siguiente automáticamente (`numero_cuota + 1`, un mes después). Así siempre hay
+  una única cuota "en juego" por contrato — nunca se acumulan cuotas futuras sin
+  resolver mientras la actual sigue impaga. La cuota vieja sin pagar seguirá
+  apareciendo como mora en el cálculo en tiempo real de la regla 6, sin necesidad de
+  un cron ni de una tabla de "renovaciones".
+- Fuera de alcance a propósito (no pedido en el plan de 5 puntos original): no se
+  crea ninguna fila en `caja` al pagar una cuota todavía. Eso es un feature de
+  cobranza/caja aparte, pendiente para cuando se pida explícitamente.
+
 ## Estado del proyecto
 
-Al `2026-07-27`: estructura del monorepo y conexión a Postgres en Railway (punto 1),
-migración inicial del esquema completo (punto 2), autenticación con roles (punto 3),
-y CRUD de clientes (punto 4) completados y verificados end-to-end contra la base real
-de Railway. Siguiente paso planeado: lógica de generación automática de cuotas al
-crear un contrato (punto 5).
+Al `2026-07-27`: los 5 puntos iniciales están completos y verificados end-to-end
+contra Postgres real en Railway — estructura del monorepo (1), migración del esquema
+(2), autenticación con roles (3), CRUD de clientes (4), y contratos con generación
+automática de cuotas (5).
