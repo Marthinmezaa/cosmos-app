@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/Marthinmezaa/cosmos-app/compare/frontend-v1.1.0...frontend-v1.2.0) (2026-07-28)
+
+
+### Features
+
+* **dashboard:** reemplazar tarjetas planas por graficos reales ([#13](https://github.com/Marthinmezaa/cosmos-app/issues/13)) ([2658483](https://github.com/Marthinmezaa/cosmos-app/commit/2658483500752a6720a288d0dd04bccae35422eb))
+
 ## [1.1.0](https://github.com/Marthinmezaa/cosmos-app/compare/frontend-v1.0.0...frontend-v1.1.0) (2026-07-28)
 
 
