@@ -12,6 +12,7 @@ const UNIQUE_VIOLATION_MESSAGES: Record<string, string> = {
   equipos_imei_key: "Ya existe un equipo con ese IMEI",
   equipos_numero_chip_key: "Ya existe un equipo con ese número de chip",
   usuarios_email_key: "Ya existe un usuario con ese email",
+  uq_metas_mensuales_mes_anio: "Ya existe una meta cargada para ese mes",
 };
 
 const POSTGRES_UNIQUE_VIOLATION = "23505";

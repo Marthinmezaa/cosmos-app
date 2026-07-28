@@ -13,6 +13,8 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/", label: "Dashboard", roles: ["admin"], end: true },
   { to: "/clientes", label: "Clientes", roles: ["admin"] },
   { to: "/clientes/nuevo", label: "Alta de cliente", roles: ["admin", "vendedor"] },
+  { to: "/caja", label: "Caja", roles: ["admin"] },
+  { to: "/metas", label: "Metas", roles: ["admin"] },
   { to: "/mi-cuenta", label: "Mi cuenta", roles: ["cliente"] },
 ];
 

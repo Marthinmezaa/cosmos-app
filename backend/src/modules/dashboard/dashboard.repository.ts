@@ -33,36 +33,6 @@ export async function listCuotasProximas(diasHaciaAdelante: number): Promise<Cuo
   return rows;
 }
 
-export async function sumIngresosDelMes(): Promise<string> {
-  const { rows } = await pool.query<{ total: string | null }>(
-    `SELECT SUM(monto_pagado) AS total
-     FROM cuotas
-     WHERE estado = 'pagada' AND date_trunc('month', fecha_pago) = date_trunc('month', CURRENT_DATE)`,
-  );
-  return rows[0]?.total ?? "0";
-}
-
-export async function sumEgresosDelMes(): Promise<string> {
-  const { rows } = await pool.query<{ total: string | null }>(
-    `SELECT SUM(monto) AS total
-     FROM caja
-     WHERE tipo = 'egreso' AND date_trunc('month', fecha) = date_trunc('month', CURRENT_DATE)`,
-  );
-  return rows[0]?.total ?? "0";
-}
-
-export interface InstalacionesPorTipoRow {
-  tipo: string;
-  cantidad: string;
-}
-
-export async function listInstalacionesPorTipo(): Promise<InstalacionesPorTipoRow[]> {
-  const { rows } = await pool.query<InstalacionesPorTipoRow>(
-    `SELECT tipo, COUNT(*) AS cantidad FROM vehiculos GROUP BY tipo ORDER BY cantidad DESC`,
-  );
-  return rows;
-}
-
 export interface ClienteEnMoraRow {
   cliente_id: number;
   cliente_nombre: string;
@@ -90,6 +60,61 @@ export async function listClientesEnMora(): Promise<ClienteEnMoraRow[]> {
      JOIN clientes cl ON cl.id = co.cliente_id
      WHERE cu.estado = 'pendiente' AND cu.fecha_vencimiento + INTERVAL '5 days' < CURRENT_DATE
      ORDER BY meses_mora DESC`,
+  );
+  return rows;
+}
+
+export interface CuotasDelMesRow {
+  total: string;
+  pagadas: string;
+  vencidas: string;
+  vigentes: string;
+}
+
+export async function obtenerCuotasDelMes(mes: number, anio: number): Promise<CuotasDelMesRow> {
+  const { rows } = await pool.query<CuotasDelMesRow>(
+    `SELECT
+       COUNT(*) AS total,
+       COUNT(*) FILTER (WHERE estado = 'pagada') AS pagadas,
+       COUNT(*) FILTER (WHERE estado = 'pendiente' AND fecha_vencimiento < CURRENT_DATE) AS vencidas,
+       COUNT(*) FILTER (WHERE estado = 'pendiente' AND fecha_vencimiento >= CURRENT_DATE) AS vigentes
+     FROM cuotas
+     WHERE EXTRACT(MONTH FROM fecha_vencimiento) = $1 AND EXTRACT(YEAR FROM fecha_vencimiento) = $2`,
+    [mes, anio],
+  );
+  return rows[0];
+}
+
+export async function sumFacturacionDelMes(mes: number, anio: number): Promise<string> {
+  const { rows } = await pool.query<{ total: string | null }>(
+    `SELECT SUM(monto_a_cobrar) AS total FROM cuotas
+     WHERE EXTRACT(MONTH FROM fecha_vencimiento) = $1 AND EXTRACT(YEAR FROM fecha_vencimiento) = $2`,
+    [mes, anio],
+  );
+  return rows[0]?.total ?? "0";
+}
+
+export async function countClientesActivos(): Promise<number> {
+  const { rows } = await pool.query<{ count: string }>(`SELECT COUNT(*) FROM clientes WHERE estado = 'activo'`);
+  return Number(rows[0].count);
+}
+
+export interface InstalacionesPorTipoRow {
+  tipo: string;
+  cantidad: string;
+}
+
+/** "Instalacion" = contrato nuevo iniciado en el mes/anio, categorizado por el tipo de vehiculo del cliente. */
+export async function listInstalacionesDelMesPorTipo(mes: number, anio: number): Promise<InstalacionesPorTipoRow[]> {
+  const { rows } = await pool.query<InstalacionesPorTipoRow>(
+    `SELECT v.tipo, COUNT(*) AS cantidad
+     FROM contratos co
+     JOIN clientes cl ON cl.id = co.cliente_id
+     JOIN vehiculos v ON v.cliente_id = cl.id
+     WHERE EXTRACT(MONTH FROM co.fecha_inicio) = $1 AND EXTRACT(YEAR FROM co.fecha_inicio) = $2
+     GROUP BY v.tipo
+     ORDER BY cantidad DESC`,
+    [mes, anio],
   );
   return rows;
 }
