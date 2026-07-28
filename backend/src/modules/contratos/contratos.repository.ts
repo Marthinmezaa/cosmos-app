@@ -48,3 +48,11 @@ export async function findContratoById(id: number): Promise<ContratoRow | null> 
   const { rows } = await pool.query<ContratoRow>("SELECT * FROM contratos WHERE id = $1", [id]);
   return rows[0] ?? null;
 }
+
+export async function findContratosByClienteId(clienteId: number): Promise<ContratoRow[]> {
+  const { rows } = await pool.query<ContratoRow>(
+    "SELECT * FROM contratos WHERE cliente_id = $1 ORDER BY fecha_inicio DESC",
+    [clienteId],
+  );
+  return rows;
+}

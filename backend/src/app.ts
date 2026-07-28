@@ -7,6 +7,7 @@ import { errorHandler } from "./middleware/error-handler";
 import { authRouter } from "./modules/auth/auth.routes";
 import { clientesRouter } from "./modules/clientes/clientes.routes";
 import { contratosRouter } from "./modules/contratos/contratos.routes";
+import { dashboardRouter } from "./modules/dashboard/dashboard.routes";
 import { usuariosRouter } from "./modules/usuarios/usuarios.routes";
 import { healthRouter } from "./routes/health.route";
 
@@ -23,6 +24,7 @@ export function createApp() {
   app.use("/api/usuarios", usuariosRouter);
   app.use("/api/clientes", clientesRouter);
   app.use("/api/contratos", contratosRouter);
+  app.use("/api/dashboard", dashboardRouter);
 
   app.use(errorHandler);
 

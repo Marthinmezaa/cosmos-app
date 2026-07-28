@@ -11,7 +11,7 @@ import {
 import { pool } from "../../config/db";
 import { translatePgError } from "../../utils/db-errors";
 import { badRequest, conflict, notFound } from "../../utils/errors";
-import { findContratoById, insertContrato, type ContratoRow } from "./contratos.repository";
+import { findContratoById, findContratosByClienteId, insertContrato, type ContratoRow } from "./contratos.repository";
 import type { CrearContratoInput, PagarCuotasInput } from "./contratos.schema";
 
 function toPublicContrato(row: ContratoRow) {
@@ -79,6 +79,11 @@ export async function crearContratoConPrimeraCuota(input: CrearContratoInput, ve
   } finally {
     client.release();
   }
+}
+
+export async function listarContratosPorCliente(clienteId: number) {
+  const contratos = await findContratosByClienteId(clienteId);
+  return contratos.map(toPublicContrato);
 }
 
 export async function obtenerContratoConCuotas(id: number) {
