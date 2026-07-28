@@ -1,13 +1,16 @@
+import { sumMovimientosDelMes, sumSaldoEnCaja } from "../caja/caja.repository";
+import { findMetaByMesAnio } from "../metas/metas.repository";
 import {
+  countClientesActivos,
   listClientesEnMora,
   listCuotasProximas,
-  listInstalacionesPorTipo,
-  sumEgresosDelMes,
-  sumIngresosDelMes,
+  listInstalacionesDelMesPorTipo,
+  obtenerCuotasDelMes,
+  sumFacturacionDelMes,
   type CuotaProximaRow,
 } from "./dashboard.repository";
 
-// Cliente en mora 3+ meses: alerta visual (regla de negocio 3). La desactivación sigue siendo siempre manual.
+// Cliente en mora 3+ meses: alerta visual (regla de negocio 3). La desactivacion sigue siendo siempre manual.
 const MESES_MORA_ALERTA = 3;
 
 function toPublicCuotaProxima(row: CuotaProximaRow) {
@@ -22,25 +25,75 @@ function toPublicCuotaProxima(row: CuotaProximaRow) {
   };
 }
 
-export async function obtenerResumenDashboard() {
-  const [cuotasHoy, cuotasSemana, ingresosMes, egresosMes, instalacionesPorTipo, clientesEnMora] = await Promise.all([
+function calcularPorcentaje(parte: number, total: number): number {
+  return total === 0 ? 0 : parte / total;
+}
+
+export async function obtenerResumenDashboard(mes: number, anio: number) {
+  const [
+    cuotasHoy,
+    cuotasSemana,
+    clientesEnMora,
+    cuotasDelMes,
+    facturacionDelMes,
+    clientesActivos,
+    instalacionesDelMesPorTipo,
+    ingresosDelMes,
+    egresosDelMes,
+    saldoEnCaja,
+    meta,
+  ] = await Promise.all([
     listCuotasProximas(0),
     listCuotasProximas(7),
-    sumIngresosDelMes(),
-    sumEgresosDelMes(),
-    listInstalacionesPorTipo(),
     listClientesEnMora(),
+    obtenerCuotasDelMes(mes, anio),
+    sumFacturacionDelMes(mes, anio),
+    countClientesActivos(),
+    listInstalacionesDelMesPorTipo(mes, anio),
+    sumMovimientosDelMes("ingreso", mes, anio),
+    sumMovimientosDelMes("egreso", mes, anio),
+    sumSaldoEnCaja(),
+    findMetaByMesAnio(mes, anio),
   ]);
 
+  const total = Number(cuotasDelMes.total);
+  const pagadas = Number(cuotasDelMes.pagadas);
+  const vencidas = Number(cuotasDelMes.vencidas);
+  const vigentes = Number(cuotasDelMes.vigentes);
+
+  const instalacionesPorTipo = instalacionesDelMesPorTipo.map((row) => ({
+    tipo: row.tipo,
+    cantidad: Number(row.cantidad),
+  }));
+  const totalInstalado = instalacionesPorTipo.reduce((acc, row) => acc + row.cantidad, 0);
+
   return {
+    periodo: { mes, anio },
+
+    cuotasDelMes: {
+      total,
+      pagadas,
+      vencidas,
+      vigentes,
+      porcentajeAtraso: calcularPorcentaje(vencidas, total),
+      porcentajePago: calcularPorcentaje(pagadas, total),
+    },
+
+    clientesActivos,
+    facturacionDelMes,
+    caja: { ingresosDelMes, egresosDelMes, saldoEnCaja },
+    instalacionesDelMesPorTipo: instalacionesPorTipo,
+
+    meta: meta
+      ? {
+          metaVentas: meta.meta_ventas,
+          instalado: totalInstalado,
+          superada: totalInstalado >= meta.meta_ventas,
+        }
+      : null,
+
     cuotasHoy: cuotasHoy.map(toPublicCuotaProxima),
     cuotasSemana: cuotasSemana.map(toPublicCuotaProxima),
-    ingresosMes,
-    egresosMes,
-    instalacionesPorTipo: instalacionesPorTipo.map((row) => ({
-      tipo: row.tipo,
-      cantidad: Number(row.cantidad),
-    })),
     clientesEnMora: clientesEnMora.map((row) => ({
       clienteId: row.cliente_id,
       clienteNombre: `${row.cliente_nombre} ${row.cliente_apellido}`,

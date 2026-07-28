@@ -169,11 +169,57 @@ export interface ClienteEnMora {
   alerta: boolean;
 }
 
+export interface CuotasDelMes {
+  total: number;
+  pagadas: number;
+  vencidas: number;
+  vigentes: number;
+  porcentajeAtraso: number;
+  porcentajePago: number;
+}
+
+export interface MetaDelMes {
+  metaVentas: number;
+  instalado: number;
+  superada: boolean;
+}
+
 export interface DashboardResumen {
+  periodo: { mes: number; anio: number };
+  cuotasDelMes: CuotasDelMes;
+  clientesActivos: number;
+  facturacionDelMes: string;
+  caja: { ingresosDelMes: string; egresosDelMes: string; saldoEnCaja: string };
+  instalacionesDelMesPorTipo: { tipo: string; cantidad: number }[];
+  meta: MetaDelMes | null;
   cuotasHoy: CuotaProxima[];
   cuotasSemana: CuotaProxima[];
-  ingresosMes: string;
-  egresosMes: string;
-  instalacionesPorTipo: { tipo: string; cantidad: number }[];
   clientesEnMora: ClienteEnMora[];
+}
+
+export type TipoMovimientoCaja = "ingreso" | "egreso";
+
+export interface MovimientoCaja {
+  id: number;
+  tipo: TipoMovimientoCaja;
+  categoria: string;
+  monto: string;
+  fecha: string;
+  concepto: string | null;
+  receptor: string | null;
+  emisor: string | null;
+}
+
+export interface ListarMovimientosCajaResponse {
+  data: MovimientoCaja[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface MetaMensual {
+  id: number;
+  mes: number;
+  anio: number;
+  metaVentas: number;
 }

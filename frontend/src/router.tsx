@@ -4,6 +4,8 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LoginPage } from "./pages/LoginPage";
 import { MiCuentaPage } from "./pages/MiCuentaPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { CajaPage } from "./pages/CajaPage";
+import { MetasPage } from "./pages/MetasPage";
 import { ClientesListPage } from "./pages/clientes/ClientesListPage";
 import { ClienteAltaPage } from "./pages/clientes/ClienteAltaPage";
 import { ClienteDetailPage } from "./pages/clientes/ClienteDetailPage";
@@ -22,6 +24,8 @@ export const router = createBrowserRouter([
             element: <ProtectedRoute roles={["admin"]} />,
             children: [
               { path: "/", element: <DashboardPage /> },
+              { path: "/caja", element: <CajaPage /> },
+              { path: "/metas", element: <MetasPage /> },
               { path: "/clientes", element: <ClientesListPage /> },
               { path: "/clientes/:id", element: <ClienteDetailPage /> },
               { path: "/contratos/:id", element: <ContratoDetailPage /> },

@@ -5,9 +5,11 @@ import morgan from "morgan";
 import { env } from "./config/env";
 import { errorHandler } from "./middleware/error-handler";
 import { authRouter } from "./modules/auth/auth.routes";
+import { cajaRouter } from "./modules/caja/caja.routes";
 import { clientesRouter } from "./modules/clientes/clientes.routes";
 import { contratosRouter } from "./modules/contratos/contratos.routes";
 import { dashboardRouter } from "./modules/dashboard/dashboard.routes";
+import { metasRouter } from "./modules/metas/metas.routes";
 import { usuariosRouter } from "./modules/usuarios/usuarios.routes";
 import { healthRouter } from "./routes/health.route";
 
@@ -25,6 +27,8 @@ export function createApp() {
   app.use("/api/clientes", clientesRouter);
   app.use("/api/contratos", contratosRouter);
   app.use("/api/dashboard", dashboardRouter);
+  app.use("/api/caja", cajaRouter);
+  app.use("/api/metas", metasRouter);
 
   app.use(errorHandler);
 
