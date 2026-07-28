@@ -211,3 +211,46 @@ Pendiente, fuera de alcance a propósito hasta que se pida explícitamente: port
 cliente (solo placeholder), integración con Cloudflare R2 para fotos, envío de email
 por SMTP, gestión de usuarios admin/vendedor desde el frontend (la API ya existe,
 `POST /api/usuarios`), y el despliegue a producción (ver `## Despliegue` arriba).
+
+## Migración de datos históricos del Excel
+
+Hecha el `2026-07-28`: los datos reales de `migration/CLIENTES.xlsm` ya están
+importados en la base de Railway — 177 clientes, 216 vehículos/equipos/contratos,
+1.870 cuotas históricas, 203 registros de costos y 1.587 movimientos de caja. El
+script vivió fuera del repo (scratchpad de la sesión, nunca commiteado) porque el
+paquete `xlsx` de npm tiene vulnerabilidades altas sin fix disponible — no vale la
+pena sumarlo como dependencia permanente para algo que corre una sola vez.
+
+Decisiones tomadas durante la importación:
+
+- Clientes con cédula/IMEI/número de chip faltante en el Excel se importaron con un
+  placeholder único (`SIN-CEDULA-0042`, `SIN-IMEI-0042`, etc.) para completar a mano
+  después.
+- Clientes con flota real (mismo cliente, varios vehículos — ej. RH Transport S.A.
+  con 9, otro cliente con 14) se importaron como un solo `cliente` con varios
+  `vehiculos`/`equipos`/`contratos`. La base ya soporta esto a nivel de tabla; la
+  UI del detalle de cliente todavía solo muestra un vehículo/equipo por cliente
+  (pendiente si hace falta una vista de flota más adelante).
+- 25 filas del Excel quedaron **afuera** de esta importación por tener datos
+  físicamente imposibles (misma chapa o IMEI en dos personas distintas). Hay que
+  cargarlas a mano una vez que se confirme cuál dato es el correcto en cada caso.
+- Se creó una cuenta de usuario (rol vendedor) por cada valor distinto de la columna
+  VENDEDOR del Excel, incluyendo canales de venta (Instagram, Facebook, WhatsApp,
+  Demo, Cliente/referido) además de las 7 personas reales — para no perder el
+  registro de cómo entró cada venta. Todas con contraseña aleatoria; si alguna
+  persona real necesita loguearse, el admin le resetea la contraseña desde la app.
+- Cuotas "Exonerado" del Excel → `pagada` con monto 0. "Desinstalado" → sin cuota
+  pendiente (contrato cerrado). De las cuotas sin pagar, solo se importó la más
+  antigua como la cuota "en juego" de cada contrato — el resto eran los 12 meses
+  pre-generados del Excel que nuestro modelo de suscripción indefinida no replica.
+- Las contraseñas en texto plano que tenía el Excel (columna CONTRASEÑA) **nunca se
+  importaron**.
+- `costos_cliente` (desde la hoja DATOS ADM) quedó con una limitación menor: para
+  los clientes con flota, solo se guardó el costo de uno de sus vehículos, no la
+  suma de todos (la tabla es una fila por cliente, no por vehículo). No es
+  incorrecto, pero está incompleto para esos ~9 clientes puntuales.
+
+La importación reveló y corrigió un bug real preexistente en el dashboard
+(`listInstalacionesDelMesPorTipo` contaba de más para clientes con flota por un
+JOIN sin distinct — invisible hasta que hubo un cliente real con varios vehículos
+y varios contratos a la vez).

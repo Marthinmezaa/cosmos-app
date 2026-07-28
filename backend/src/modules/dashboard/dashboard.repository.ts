@@ -106,8 +106,11 @@ export interface InstalacionesPorTipoRow {
 
 /** "Instalacion" = contrato nuevo iniciado en el mes/anio, categorizado por el tipo de vehiculo del cliente. */
 export async function listInstalacionesDelMesPorTipo(mes: number, anio: number): Promise<InstalacionesPorTipoRow[]> {
+  // COUNT(DISTINCT v.id), no COUNT(*): un cliente puede tener varios vehiculos y
+  // varios contratos (flotas). Contar filas del JOIN sin distinct multiplica en cruz
+  // (ej. 9 vehiculos x 9 contratos = hasta 81 "instalaciones" para un solo cliente).
   const { rows } = await pool.query<InstalacionesPorTipoRow>(
-    `SELECT v.tipo, COUNT(*) AS cantidad
+    `SELECT v.tipo, COUNT(DISTINCT v.id) AS cantidad
      FROM contratos co
      JOIN clientes cl ON cl.id = co.cliente_id
      JOIN vehiculos v ON v.cliente_id = cl.id
