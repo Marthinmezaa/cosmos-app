@@ -55,7 +55,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm audit --audit-level=high
+      - run: npm run audit
 
   dependency-review:
     name: Revisión de dependencias nuevas
@@ -64,3 +64,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/dependency-review-action@v4
+        with:
+          # GHSA-qwww-vcr4-c8h2: solo afecta el modo RSC de react-router, que este SPA
+          # no usa. Ver justificacion completa en audit-ci.jsonc.
+          allow-ghsas: GHSA-qwww-vcr4-c8h2

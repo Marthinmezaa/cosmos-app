@@ -14,9 +14,13 @@
     "build:frontend": "npm run build --workspace frontend",
     "lint:backend": "npm run lint --workspace backend",
     "lint:frontend": "npm run lint --workspace frontend",
-    "migrate": "npm run migrate --workspace backend"
+    "migrate": "npm run migrate --workspace backend",
+    "audit": "audit-ci --config audit-ci.jsonc"
   },
   "engines": {
     "node": ">=20.0.0"
+  },
+  "devDependencies": {
+    "audit-ci": "^7.1.0"
   }
 }

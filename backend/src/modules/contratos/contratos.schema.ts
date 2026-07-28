@@ -20,6 +20,12 @@ export const crearContratoSchema = z
 
 export type CrearContratoInput = z.infer<typeof crearContratoSchema>;
 
+export const listarContratosQuerySchema = z.object({
+  clienteId: z.coerce.number(requerido("El cliente")).int().positive(),
+});
+
+export type ListarContratosQuery = z.infer<typeof listarContratosQuerySchema>;
+
 export const pagarCuotasSchema = z.object({
   cantidadMeses: z.number().int().min(1, "Debe pagar al menos 1 mes").max(24, "Máximo 24 meses por pago").default(1),
   fechaPago: z.string().date("Fecha inválida (usar YYYY-MM-DD)").optional(),
