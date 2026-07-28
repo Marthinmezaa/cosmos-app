@@ -1,0 +1,13 @@
+{
+  "$schema": "https://raw.githubusercontent.com/IBM/audit-ci/main/docs/schema.json",
+  "high": true,
+  // GHSA-qwww-vcr4-c8h2: React Router "RSC Mode CSRF Bypass". Solo afecta apps que usan
+  // el modo RSC (React Server Components) de react-router, con acciones de servidor.
+  // Este proyecto es un SPA cliente puro (createBrowserRouter/RouterProvider, sin RSC,
+  // sin loaders/actions de servidor), asi que el vector de ataque no existe en este
+  // codigo. No hay version parcheada todavia (ver npm view react-router-dom versions);
+  // bajar de version expone en cambio ~14 CVEs reales de rangos anteriores (varias mas
+  // graves, incluyendo RCE y XSS via SSR). Revisar este allowlist cuando salga un
+  // react-router-dom >=8.3.0 o una release 7.x que lo backportee.
+  "allowlist": ["GHSA-qwww-vcr4-c8h2"]
+}
