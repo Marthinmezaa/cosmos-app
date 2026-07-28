@@ -118,3 +118,25 @@ export async function listInstalacionesDelMesPorTipo(mes: number, anio: number):
   );
   return rows;
 }
+
+export interface InstalacionesPorAnioMesRow {
+  anio: number;
+  mes: number;
+  cantidad: string;
+}
+
+/** Instalaciones (contratos nuevos) por mes, para los anios pedidos. Base del grafico "avance anual". */
+export async function listInstalacionesPorAnio(anios: number[]): Promise<InstalacionesPorAnioMesRow[]> {
+  const { rows } = await pool.query<InstalacionesPorAnioMesRow>(
+    `SELECT
+       EXTRACT(YEAR FROM co.fecha_inicio)::int AS anio,
+       EXTRACT(MONTH FROM co.fecha_inicio)::int AS mes,
+       COUNT(*) AS cantidad
+     FROM contratos co
+     WHERE EXTRACT(YEAR FROM co.fecha_inicio) = ANY($1::int[])
+     GROUP BY anio, mes
+     ORDER BY anio, mes`,
+    [anios],
+  );
+  return rows;
+}
