@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/Marthinmezaa/cosmos-app/compare/backend-v1.5.0...backend-v1.5.1) (2026-07-28)
+
+
+### Bug Fixes
+
+* **dashboard:** instalaciones del mes contaba de mas para clientes con flota ([#16](https://github.com/Marthinmezaa/cosmos-app/issues/16)) ([c57b3d1](https://github.com/Marthinmezaa/cosmos-app/commit/c57b3d104d04e984ec810b3d9e9668a3d483339f))
+
 ## [1.5.0](https://github.com/Marthinmezaa/cosmos-app/compare/backend-v1.4.0...backend-v1.5.0) (2026-07-28)
 
 
