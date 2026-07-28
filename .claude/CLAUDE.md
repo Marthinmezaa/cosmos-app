@@ -6,8 +6,11 @@ una empresa de rastreo GPS vehicular en Paraguay.
 ## Stack
 
 - **Backend**: Node.js + Express + TypeScript, PostgreSQL vía `pg`, migraciones con
-  `node-pg-migrate` (SQL plano, sin ORM). Desplegado en Railway.
-- **Frontend**: React + Vite + TypeScript, responsive (PC / tablet / celular).
+  `node-pg-migrate` (SQL plano, sin ORM). Base de datos en Railway; el backend en sí
+  **todavía no está desplegado** (ver `## Despliegue`) — hoy corre solo local con
+  `npm run dev`, apuntando a la base real de Railway.
+- **Frontend**: React + Vite + TypeScript, responsive (PC / tablet / celular). Tampoco
+  desplegado todavía.
 - **Fotos**: Cloudflare R2.
 - **Email**: SMTP con `info@cosmostrak.com.py`.
 - **Monorepo**: npm workspaces (`backend/`, `frontend/`).
@@ -134,9 +137,77 @@ un plan de N cuotas fijas. Esto define todo el diseño:
   crea ninguna fila en `caja` al pagar una cuota todavía. Eso es un feature de
   cobranza/caja aparte, pendiente para cuando se pida explícitamente.
 
+## Despliegue
+
+**Estado actual (`2026-07-28`): nada desplegado todavía.** Solo la base de datos
+Postgres vive en Railway. El backend y el frontend corren nada más cuando alguien los
+prende a mano (`npm run dev`) en su propia máquina — no hay URL fija, no hay HTTPS, y
+si se cierra la terminal se corta. Esto es suficiente para desarrollo, pero no para
+que el cliente lo use día a día.
+
+Pendiente para cuando se decida pasar a producción (no hacer nada de esto todavía,
+son los pasos para esa instancia futura):
+
+1. **Backend → Railway** (ya está ahí la base, mismo proyecto): crear un servicio
+   Railway conectado a este repo (carpeta `backend/`), con build `npm run build`
+   (`tsc -b`) y start `npm start` (`node dist/index.js`, ya definido en
+   `package.json`). Variables de entorno que exige `src/config/env.ts`:
+   - `DATABASE_URL` — ya existe en el proyecto Railway, se referencia sola si el
+     servicio queda en el mismo proyecto que la base.
+   - `JWT_SECRET` — mínimo 32 caracteres, **generar uno nuevo para producción**,
+     nunca reusar el de `.env` local.
+   - `CORS_ORIGIN` — la URL pública del frontend en producción (paso 2).
+   - `NODE_ENV=production`.
+   - `PORT` — Railway la inyecta sola, no hace falta setearla a mano.
+   Antes de recibir tráfico real: correr `npm run migrate` contra la base de
+   producción, y crear el admin real con `npm run seed:admin -- "Nombre" email
+   password` (nunca dejar la contraseña temporal `DevTemp123!` de las pruebas de
+   desarrollo — esa es solo de esta sesión de trabajo local).
+
+2. **Frontend → decidir plataforma**: Railway (servicio estático aparte) o un host
+   estático dedicado (Vercel / Netlify / Cloudflare Pages — cualquiera tiene un free
+   tier de sobra para un panel administrativo de bajo tráfico). Build: `npm run
+   build` (Vite). Variable de entorno en build time: `VITE_API_URL` apuntando a la
+   URL pública del backend del paso 1.
+
+3. **Dominio**: hoy no hay uno propio conectado. Cuando se elija (ej.
+   `app.cosmostrak.com.py` para el frontend, `api.cosmostrak.com.py` para el
+   backend), apuntar el DNS al proveedor elegido en cada paso — ambas plataformas
+   dan HTTPS automático sobre dominio propio.
+
+4. **Deploy automático (opcional)**: Railway y los hosts de frontend soportan
+   conectar el repo de GitHub para redeployar solo con cada merge a `main` — evita
+   tener que desplegar a mano después de cada release de `release-please`.
+
+Ninguno de estos 4 pasos requiere tocar código de la aplicación — son configuración
+de infraestructura en los dashboards de cada plataforma (necesita que el dueño del
+proyecto cree/conecte esas cuentas).
+
 ## Estado del proyecto
 
-Al `2026-07-27`: los 5 puntos iniciales están completos y verificados end-to-end
-contra Postgres real en Railway — estructura del monorepo (1), migración del esquema
-(2), autenticación con roles (3), CRUD de clientes (4), y contratos con generación
-automática de cuotas (5).
+Al `2026-07-28`: además de los 5 puntos iniciales (estructura del monorepo,
+migración del esquema, autenticación con roles, CRUD de clientes, contratos con
+generación automática de cuotas), están completos y verificados end-to-end contra
+Postgres real en Railway:
+
+- **Frontend completo** (React + Vite + Tailwind + react-router-dom): login, rutas
+  protegidas por rol, layout con nav condicional, alta/listado/detalle+edición de
+  clientes, alta/detalle+pago de contratos.
+- **Dashboard con selector de mes/año** (`GET /api/dashboard?mes=&anio=`): cuotas del
+  mes (total/pagada/vencida/vigente + %atraso + %pago), clientes activos,
+  facturación, instalaciones del mes por tipo, y los widgets "de ahora mismo" (cuotas
+  que vencen hoy/semana, clientes en mora) sin filtro de período. Reconstruido con
+  gráficos reales (barras, meters, línea multi-año "avance anual" con tooltip)
+  replicando el estilo de la hoja `DASH` del Excel original, siguiendo el skill
+  interno de dataviz (paleta validada contra daltonismo).
+- **Módulo caja** (`POST`/`GET /api/caja`, admin): carga manual de movimientos de
+  ingreso/egreso — no se generan solos al pagar una cuota, es a propósito (igual que
+  la hoja CAJA del Excel).
+- **Módulo metas** (`POST`/`PATCH`/`GET /api/metas`, admin): meta de ventas mensual
+  cargada directamente por el admin, en vez del cálculo de crecimiento interanual del
+  Excel original.
+
+Pendiente, fuera de alcance a propósito hasta que se pida explícitamente: portal de
+cliente (solo placeholder), integración con Cloudflare R2 para fotos, envío de email
+por SMTP, gestión de usuarios admin/vendedor desde el frontend (la API ya existe,
+`POST /api/usuarios`), y el despliegue a producción (ver `## Despliegue` arriba).
