@@ -5,10 +5,15 @@ import {
   listClientesEnMora,
   listCuotasProximas,
   listInstalacionesDelMesPorTipo,
+  listInstalacionesPorAnio,
   obtenerCuotasDelMes,
   sumFacturacionDelMes,
   type CuotaProximaRow,
+  type InstalacionesPorAnioMesRow,
 } from "./dashboard.repository";
+
+const ANIOS_AVANCE_ANUAL = 3;
+const MESES_DEL_ANIO = 12;
 
 // Cliente en mora 3+ meses: alerta visual (regla de negocio 3). La desactivacion sigue siendo siempre manual.
 const MESES_MORA_ALERTA = 3;
@@ -29,7 +34,28 @@ function calcularPorcentaje(parte: number, total: number): number {
   return total === 0 ? 0 : parte / total;
 }
 
+/** Instalaciones acumuladas mes a mes, un array de 12 valores por anio (para el grafico "avance anual"). */
+function armarAvanceAnual(anios: number[], filas: InstalacionesPorAnioMesRow[]) {
+  return anios.map((anio) => {
+    const porMes = new Array<number>(MESES_DEL_ANIO).fill(0);
+    for (const fila of filas) {
+      if (fila.anio === anio) porMes[fila.mes - 1] = Number(fila.cantidad);
+    }
+
+    const acumulado: number[] = [];
+    let corrida = 0;
+    for (const cantidad of porMes) {
+      corrida += cantidad;
+      acumulado.push(corrida);
+    }
+
+    return { anio, valores: acumulado };
+  });
+}
+
 export async function obtenerResumenDashboard(mes: number, anio: number) {
+  const aniosAvanceAnual = Array.from({ length: ANIOS_AVANCE_ANUAL }, (_, i) => anio - ANIOS_AVANCE_ANUAL + 1 + i);
+
   const [
     cuotasHoy,
     cuotasSemana,
@@ -38,6 +64,7 @@ export async function obtenerResumenDashboard(mes: number, anio: number) {
     facturacionDelMes,
     clientesActivos,
     instalacionesDelMesPorTipo,
+    instalacionesPorAnio,
     ingresosDelMes,
     egresosDelMes,
     saldoEnCaja,
@@ -50,6 +77,7 @@ export async function obtenerResumenDashboard(mes: number, anio: number) {
     sumFacturacionDelMes(mes, anio),
     countClientesActivos(),
     listInstalacionesDelMesPorTipo(mes, anio),
+    listInstalacionesPorAnio(aniosAvanceAnual),
     sumMovimientosDelMes("ingreso", mes, anio),
     sumMovimientosDelMes("egreso", mes, anio),
     sumSaldoEnCaja(),
@@ -83,6 +111,7 @@ export async function obtenerResumenDashboard(mes: number, anio: number) {
     facturacionDelMes,
     caja: { ingresosDelMes, egresosDelMes, saldoEnCaja },
     instalacionesDelMesPorTipo: instalacionesPorTipo,
+    avanceAnual: armarAvanceAnual(aniosAvanceAnual, instalacionesPorAnio),
 
     meta: meta
       ? {

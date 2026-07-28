@@ -184,6 +184,11 @@ export interface MetaDelMes {
   superada: boolean;
 }
 
+export interface AvanceAnual {
+  anio: number;
+  valores: number[];
+}
+
 export interface DashboardResumen {
   periodo: { mes: number; anio: number };
   cuotasDelMes: CuotasDelMes;
@@ -191,6 +196,7 @@ export interface DashboardResumen {
   facturacionDelMes: string;
   caja: { ingresosDelMes: string; egresosDelMes: string; saldoEnCaja: string };
   instalacionesDelMesPorTipo: { tipo: string; cantidad: number }[];
+  avanceAnual: AvanceAnual[];
   meta: MetaDelMes | null;
   cuotasHoy: CuotaProxima[];
   cuotasSemana: CuotaProxima[];

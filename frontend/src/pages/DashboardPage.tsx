@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { obtenerDashboard } from "../api/dashboard";
+import { AvanceAnualChart } from "../components/charts/AvanceAnualChart";
+import { BarComparison } from "../components/charts/BarComparison";
+import { Meter } from "../components/charts/Meter";
+import { StatTile } from "../components/charts/StatTile";
 import { useAsync } from "../hooks/useAsync";
 import { formatFecha, formatGuaranies } from "../lib/format";
 import type { ClienteEnMora, CuotaProxima } from "../lib/types";
@@ -10,18 +14,15 @@ const MESES = [
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
 ];
 
+// Paleta de estado (status palette del skill de dataviz): fija, nunca se reusa para series.
+const COLOR_TOTAL = "bg-[#2a78d6] dark:bg-[#3987e5]";
+const COLOR_PAGADA = "bg-[#0ca30c]";
+const COLOR_VENCIDA = "bg-[#d03b3b]";
+const COLOR_VIGENTE = "bg-slate-400 dark:bg-slate-500";
+const COLOR_INSTALACION = "bg-[#2a78d6] dark:bg-[#3987e5]";
+
 function formatPorcentaje(valor: number): string {
   return `${Math.round(valor * 100)}%`;
-}
-
-function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-      <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
-      <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">{value}</p>
-      {sub && <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{sub}</p>}
-    </div>
-  );
 }
 
 function CuotasTable({ cuotas, vacioLabel }: { cuotas: CuotaProxima[]; vacioLabel: string }) {
@@ -135,71 +136,91 @@ export function DashboardPage() {
 
       {data && (
         <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard
-              label="Cuotas del mes"
-              value={String(data.cuotasDelMes.total)}
-              sub={`${data.cuotasDelMes.pagadas} pagadas · ${data.cuotasDelMes.vencidas} vencidas · ${data.cuotasDelMes.vigentes} vigentes`}
-            />
-            <StatCard label="% de pago" value={formatPorcentaje(data.cuotasDelMes.porcentajePago)} />
-            <StatCard label="% de atraso" value={formatPorcentaje(data.cuotasDelMes.porcentajeAtraso)} />
-            <StatCard label="Clientes activos" value={String(data.clientesActivos)} />
-          </div>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <StatTile label="Clientes activos" value={String(data.clientesActivos)} />
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard label="Facturación del mes" value={formatGuaranies(data.facturacionDelMes)} />
-            <StatCard label="Ingresos del mes (caja)" value={formatGuaranies(data.caja.ingresosDelMes)} />
-            <StatCard label="Egresos del mes (caja)" value={formatGuaranies(data.caja.egresosDelMes)} />
-            <StatCard label="Saldo en caja" value={formatGuaranies(data.caja.saldoEnCaja)} />
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <section className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+            <section className="rounded-xl border border-slate-200 bg-white lg:col-span-2 dark:border-slate-800 dark:bg-slate-900">
               <h2 className="border-b border-slate-100 px-4 py-3 text-sm font-semibold text-slate-900 dark:border-slate-800 dark:text-white">
-                Instalaciones del mes por tipo de vehículo
+                Cuotas del mes
               </h2>
-              {data.instalacionesDelMesPorTipo.length === 0 ? (
-                <p className="p-4 text-sm text-slate-500 dark:text-slate-400">No hay instalaciones este mes.</p>
-              ) : (
-                <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {data.instalacionesDelMesPorTipo.map((item) => (
-                    <li key={item.tipo} className="flex items-center justify-between px-4 py-2 text-sm">
-                      <span className="text-slate-700 dark:text-slate-300">{item.tipo}</span>
-                      <span className="font-medium text-slate-900 dark:text-white">{item.cantidad}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <BarComparison
+                rows={[
+                  { key: "total", label: "Total", value: data.cuotasDelMes.total, colorClassName: COLOR_TOTAL },
+                  { key: "pagada", label: "Pagada", value: data.cuotasDelMes.pagadas, colorClassName: COLOR_PAGADA },
+                  { key: "vencida", label: "Vencida", value: data.cuotasDelMes.vencidas, colorClassName: COLOR_VENCIDA },
+                  { key: "vigente", label: "Vigente", value: data.cuotasDelMes.vigentes, colorClassName: COLOR_VIGENTE },
+                ]}
+                max={data.cuotasDelMes.total}
+              />
             </section>
+          </div>
 
-            <section className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-              <h2 className="mb-3 text-sm font-semibold text-slate-900 dark:text-white">Meta de ventas del mes</h2>
-              {data.meta === null ? (
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  No hay meta cargada para {MESES[mes - 1]} {anio}.{" "}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatTile label="Facturación del mes" value={formatGuaranies(data.facturacionDelMes)} />
+            <StatTile label="Ingresos del mes (caja)" value={formatGuaranies(data.caja.ingresosDelMes)} />
+            <StatTile label="Egresos del mes (caja)" value={formatGuaranies(data.caja.egresosDelMes)} />
+            <StatTile label="Saldo en caja" value={formatGuaranies(data.caja.saldoEnCaja)} />
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <Meter
+              label="% de pago"
+              displayValue={formatPorcentaje(data.cuotasDelMes.porcentajePago)}
+              fraction={data.cuotasDelMes.porcentajePago}
+              fillClassName="bg-[#0ca30c]"
+            />
+            <Meter
+              label="% de atraso"
+              displayValue={formatPorcentaje(data.cuotasDelMes.porcentajeAtraso)}
+              fraction={data.cuotasDelMes.porcentajeAtraso}
+              fillClassName={data.cuotasDelMes.porcentajeAtraso >= 0.4 ? "bg-[#d03b3b]" : data.cuotasDelMes.porcentajeAtraso >= 0.2 ? "bg-[#fab219]" : "bg-[#0ca30c]"}
+            />
+
+            {data.meta === null ? (
+              <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Meta de ventas del mes</p>
+                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                  No hay meta cargada.{" "}
                   <Link to="/metas" className="text-purple-600 hover:underline dark:text-purple-400">
                     Cargar meta
                   </Link>
                 </p>
+              </div>
+            ) : (
+              <Meter
+                label="Meta de ventas del mes"
+                displayValue={`${data.meta.instalado} / ${data.meta.metaVentas}`}
+                fraction={data.meta.metaVentas === 0 ? 1 : data.meta.instalado / data.meta.metaVentas}
+                fillClassName={data.meta.superada ? "bg-[#0ca30c]" : "bg-[#2a78d6] dark:bg-[#3987e5]"}
+                sub={data.meta.superada ? "Meta superada" : "A trabajar"}
+              />
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <section className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+              <h2 className="border-b border-slate-100 px-4 py-3 text-sm font-semibold text-slate-900 dark:border-slate-800 dark:text-white">
+                Instalaciones del mes
+              </h2>
+              {data.instalacionesDelMesPorTipo.length === 0 ? (
+                <p className="p-4 text-sm text-slate-500 dark:text-slate-400">No hay instalaciones este mes.</p>
               ) : (
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-2xl font-semibold text-slate-900 dark:text-white">
-                      {data.meta.instalado} / {data.meta.metaVentas}
-                    </p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">instalaciones vs. meta</p>
-                  </div>
-                  <span
-                    className={
-                      data.meta.superada
-                        ? "rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-700 dark:bg-green-900/40 dark:text-green-300"
-                        : "rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
-                    }
-                  >
-                    {data.meta.superada ? "Meta superada" : "A trabajar"}
-                  </span>
-                </div>
+                <BarComparison
+                  rows={data.instalacionesDelMesPorTipo.map((item) => ({
+                    key: item.tipo,
+                    label: item.tipo,
+                    value: item.cantidad,
+                    colorClassName: COLOR_INSTALACION,
+                  }))}
+                />
               )}
+            </section>
+
+            <section className="rounded-xl border border-slate-200 bg-white lg:col-span-2 dark:border-slate-800 dark:bg-slate-900">
+              <h2 className="border-b border-slate-100 px-4 py-3 text-sm font-semibold text-slate-900 dark:border-slate-800 dark:text-white">
+                Avance anual de instalaciones
+              </h2>
+              <AvanceAnualChart series={data.avanceAnual} />
             </section>
           </div>
 
