@@ -256,6 +256,9 @@ se usa el SDK oficial de AWS (`@aws-sdk/client-s3` +
 - Verificado de punta a punta contra el bucket real: presign, `PUT` del
   archivo, `GET` público del resultado (200, `image/png`), y borrado del
   objeto de prueba.
+integración con Cloudflare R2 para fotos, envío de email por SMTP, gestión de
+usuarios admin/vendedor desde el frontend (la API ya existe, `POST
+/api/usuarios`), y el despliegue a producción (ver `## Despliegue` arriba).
 
 ## Portal de cliente (infraestructura sin uso activo)
 

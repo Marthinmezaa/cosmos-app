@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/Marthinmezaa/cosmos-app/compare/frontend-v1.2.0...frontend-v1.3.0) (2026-07-30)
+
+
+### Features
+
+* portal de cliente y credenciales de Trakzee ([#18](https://github.com/Marthinmezaa/cosmos-app/issues/18)) ([48b3625](https://github.com/Marthinmezaa/cosmos-app/commit/48b3625f76b92bd7db143282a242a59f11e5ee44))
+
 ## [1.2.0](https://github.com/Marthinmezaa/cosmos-app/compare/frontend-v1.1.0...frontend-v1.2.0) (2026-07-28)
 
 
