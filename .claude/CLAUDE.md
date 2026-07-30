@@ -253,12 +253,22 @@ se usa el SDK oficial de AWS (`@aws-sdk/client-s3` +
   (`R2_PUBLIC_URL_BASE`); para producción real convendría un dominio propio
   conectado al bucket en vez de depender del subdominio `r2.dev`
   (no resuelto en esta sesión).
-- Verificado de punta a punta contra el bucket real: presign, `PUT` del
-  archivo, `GET` público del resultado (200, `image/png`), y borrado del
-  objeto de prueba.
-integración con Cloudflare R2 para fotos, envío de email por SMTP, gestión de
-usuarios admin/vendedor desde el frontend (la API ya existe, `POST
-/api/usuarios`), y el despliegue a producción (ver `## Despliegue` arriba).
+- **CORS**: el bucket necesita una CORS Policy configurada (dashboard → bucket
+  → Settings → CORS Policy) que permita `PUT`/`GET` desde el origen del
+  frontend, si no el navegador bloquea el `PUT` directo con un preflight
+  `OPTIONS` que responde 403 (no es un error de credenciales, aunque el
+  síntoma se parece). No se puede configurar por API con un token de permiso
+  "Object Read & Write" (da `AccessDenied`), hay que hacerlo desde el
+  dashboard. Hoy solo tiene habilitado `http://localhost:5173` — **al
+  desplegar el frontend a producción hay que agregar esa URL pública nueva a
+  la CORS Policy del bucket**, si no la subida de fotos se rompe en
+  producción aunque funcione en local.
+- Verificado de punta a punta dos veces: (1) contra el bucket real por script
+  (presign, `PUT`, `GET` público 200 `image/png`, borrado) y (2) a través de
+  la UI real (login admin, alta de cliente con una foto elegida desde el
+  selector de archivo, confirmando que `url_r2` queda bien guardada y se
+  renderiza en la ficha del cliente). Cliente y archivo de prueba borrados
+  después de verificar.
 
 ## Portal de cliente (infraestructura sin uso activo)
 
