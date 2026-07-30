@@ -10,6 +10,7 @@ import { clientesRouter } from "./modules/clientes/clientes.routes";
 import { contratosRouter } from "./modules/contratos/contratos.routes";
 import { dashboardRouter } from "./modules/dashboard/dashboard.routes";
 import { metasRouter } from "./modules/metas/metas.routes";
+import { portalRouter } from "./modules/portal/portal.routes";
 import { usuariosRouter } from "./modules/usuarios/usuarios.routes";
 import { healthRouter } from "./routes/health.route";
 
@@ -29,6 +30,7 @@ export function createApp() {
   app.use("/api/dashboard", dashboardRouter);
   app.use("/api/caja", cajaRouter);
   app.use("/api/metas", metasRouter);
+  app.use("/api/portal", portalRouter);
 
   app.use(errorHandler);
 

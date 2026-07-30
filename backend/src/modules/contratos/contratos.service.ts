@@ -14,7 +14,7 @@ import { badRequest, conflict, notFound } from "../../utils/errors";
 import { findContratoById, findContratosByClienteId, insertContrato, type ContratoRow } from "./contratos.repository";
 import type { CrearContratoInput, PagarCuotasInput } from "./contratos.schema";
 
-function toPublicContrato(row: ContratoRow) {
+export function toPublicContrato(row: ContratoRow) {
   return {
     id: row.id,
     clienteId: row.cliente_id,
@@ -27,7 +27,7 @@ function toPublicContrato(row: ContratoRow) {
   };
 }
 
-function toPublicCuota(row: CuotaRow) {
+export function toPublicCuota(row: CuotaRow) {
   return {
     id: row.id,
     numeroCuota: row.numero_cuota,
