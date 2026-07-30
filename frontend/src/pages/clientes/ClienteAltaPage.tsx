@@ -1,9 +1,18 @@
-import { type FormEvent, useState } from "react";
+import { type ChangeEvent, type FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 import { crearCliente } from "../../api/clientes";
+import { subirFoto } from "../../api/uploads";
 import { useAuth } from "../../context/AuthContext";
 import { ApiError } from "../../lib/api-client";
 import type { ClienteCompleto } from "../../lib/types";
+
+interface FotoEnCurso {
+  id: string;
+  nombreArchivo: string;
+  estado: "subiendo" | "lista" | "error";
+  url: string | null;
+  error?: string;
+}
 
 interface FormState {
   cedula: string;
@@ -82,7 +91,7 @@ function Field({
 export function ClienteAltaPage() {
   const { usuario } = useAuth();
   const [form, setForm] = useState<FormState>(INITIAL_STATE);
-  const [fotos, setFotos] = useState<string[]>([]);
+  const [fotos, setFotos] = useState<FotoEnCurso[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [creado, setCreado] = useState<ClienteCompleto | null>(null);
@@ -91,9 +100,30 @@ export function ClienteAltaPage() {
     setForm((f) => ({ ...f, [name]: value }));
   }
 
-  function actualizarFoto(index: number, value: string): void {
-    setFotos((fs) => fs.map((f, i) => (i === index ? value : f)));
+  function agregarFotos(event: ChangeEvent<HTMLInputElement>): void {
+    const archivos = Array.from(event.target.files ?? []);
+    event.target.value = "";
+
+    for (const archivo of archivos) {
+      const id = crypto.randomUUID();
+      setFotos((fs) => [...fs, { id, nombreArchivo: archivo.name, estado: "subiendo", url: null }]);
+
+      subirFoto(archivo)
+        .then((url) => {
+          setFotos((fs) => fs.map((f) => (f.id === id ? { ...f, estado: "lista", url } : f)));
+        })
+        .catch((err) => {
+          const mensaje = err instanceof ApiError ? err.message : "No se pudo subir la foto";
+          setFotos((fs) => fs.map((f) => (f.id === id ? { ...f, estado: "error", error: mensaje } : f)));
+        });
+    }
   }
+
+  function quitarFoto(id: string): void {
+    setFotos((fs) => fs.filter((f) => f.id !== id));
+  }
+
+  const hayFotosSubiendo = fotos.some((f) => f.estado === "subiendo");
 
   async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -126,7 +156,7 @@ export function ClienteAltaPage() {
           numeroChip: form.numeroChip,
           operadora: form.operadora,
         },
-        fotos: fotos.filter((url) => url.trim() !== "").map((urlR2) => ({ urlR2 })),
+        fotos: fotos.filter((f) => f.estado === "lista" && f.url).map((f) => ({ urlR2: f.url! })),
       });
       setCreado(resultado);
     } catch (err) {
@@ -227,27 +257,23 @@ export function ClienteAltaPage() {
       <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Fotos (opcional)</h2>
-          <button
-            type="button"
-            onClick={() => setFotos((fs) => [...fs, ""])}
-            className="text-sm font-medium text-purple-600 hover:underline dark:text-purple-400"
-          >
-            + Agregar foto
-          </button>
+          <label className="cursor-pointer text-sm font-medium text-purple-600 hover:underline dark:text-purple-400">
+            + Agregar fotos
+            <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={agregarFotos} className="hidden" />
+          </label>
         </div>
-        {fotos.map((url, index) => (
-          <div key={index} className="flex gap-2">
-            <input
-              type="url"
-              placeholder="URL de la foto ya subida"
-              value={url}
-              onChange={(e) => actualizarFoto(index, e.target.value)}
-              className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-            />
+        {fotos.map((foto) => (
+          <div key={foto.id} className="flex items-center gap-3 rounded-md border border-slate-200 px-3 py-2 text-sm dark:border-slate-700">
+            {foto.estado === "lista" && foto.url && (
+              <img src={foto.url} alt="" className="h-10 w-10 rounded object-cover" />
+            )}
+            <span className="flex-1 truncate text-slate-700 dark:text-slate-300">{foto.nombreArchivo}</span>
+            {foto.estado === "subiendo" && <span className="text-xs text-slate-500 dark:text-slate-400">Subiendo…</span>}
+            {foto.estado === "error" && <span className="text-xs text-red-600 dark:text-red-400">{foto.error}</span>}
             <button
               type="button"
-              onClick={() => setFotos((fs) => fs.filter((_, i) => i !== index))}
-              className="rounded-md border border-slate-300 px-3 text-sm text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400"
+              onClick={() => quitarFoto(foto.id)}
+              className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400"
             >
               Quitar
             </button>
@@ -259,10 +285,10 @@ export function ClienteAltaPage() {
 
       <button
         type="submit"
-        disabled={submitting}
+        disabled={submitting || hayFotosSubiendo}
         className="rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-60"
       >
-        {submitting ? "Guardando…" : "Registrar cliente"}
+        {submitting ? "Guardando…" : hayFotosSubiendo ? "Esperando fotos…" : "Registrar cliente"}
       </button>
     </form>
   );

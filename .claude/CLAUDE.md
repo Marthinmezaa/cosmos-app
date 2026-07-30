@@ -106,8 +106,8 @@ Decisión de alcance (confirmada con el usuario): el alta de cliente NO crea el
 contrato. `contratos.vendedor_id` (autocompletado con el usuario logueado, regla de
 negocio 5) y la generación de cuotas se resuelven en un paso aparte (punto 5).
 
-Las fotos se reciben como URLs ya subidas (`url_r2`) — la integración real con
-Cloudflare R2 (presigned upload) todavía no está conectada.
+Las fotos se reciben como URLs ya subidas (`url_r2`), obtenidas subiendo el
+archivo a Cloudflare R2 con URL prefirmada (ver `## Fotos en Cloudflare R2`).
 
 Violaciones de UNIQUE (cédula, chapa, chasis, IMEI, número de chip) se traducen a
 mensajes en español vía `utils/db-errors.ts` en vez de exponer el error crudo de
@@ -211,6 +211,51 @@ Postgres real en Railway:
   Excel original.
 
 Pendiente, fuera de alcance a propósito hasta que se pida explícitamente:
+envío de email por SMTP, gestión de usuarios admin/vendedor desde el frontend
+(la API ya existe, `POST /api/usuarios`), y el despliegue a producción (ver
+`## Despliegue` arriba).
+
+## Fotos en Cloudflare R2
+
+Hecho el `2026-07-30`: reemplaza el campo de "pegar URL ya subida" del alta
+de cliente por una subida real. R2 es compatible con la API de S3, así que
+se usa el SDK oficial de AWS (`@aws-sdk/client-s3` +
+`@aws-sdk/s3-request-presigner`) apuntando al endpoint de Cloudflare.
+
+- `POST /api/uploads/presign` (admin o vendedor, mismos roles que el alta de
+  cliente): recibe `contentType` (solo `image/jpeg`/`png`/`webp`) y devuelve
+  `{ uploadUrl, publicUrl }`. `uploadUrl` es una URL prefirmada de `PUT`
+  válida 5 minutos; `publicUrl` es la URL final del archivo. La `key` del
+  objeto siempre es un UUID generado en el backend (`clientes/<uuid>.<ext>`),
+  nunca el nombre de archivo del usuario — evita colisiones y nombres que
+  rompan la URL.
+- El navegador sube el archivo **directo a R2** con ese `uploadUrl` (`fetch`
+  con `method: "PUT"`), sin pasar por nuestro servidor — más rápido y no le
+  carga tráfico/almacenamiento temporal a Railway.
+  `frontend/src/api/uploads.ts` (`subirFoto`) encapsula las dos llamadas
+  (pedir la URL prefirmada + subir el archivo). `ClienteAltaPage.tsx` sube
+  cada foto apenas se selecciona (no espera al submit del formulario) y
+  bloquea el botón de "Registrar cliente" mientras haya alguna subida en
+  curso.
+- Variables de entorno nuevas en `src/config/env.ts` (obligatorias, sin
+  default — el server no arranca sin ellas): `R2_ACCOUNT_ID`,
+  `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`,
+  `R2_PUBLIC_URL_BASE`. Se generan desde el dashboard de Cloudflare, sección
+  **R2 Object Storage → Manage R2 API Tokens** (ojo: **no** sirve un token
+  creado desde "Manage Account" / API Tokens general de la cuenta — R2 tiene
+  su propio sistema de tokens con credenciales estilo S3
+  Access Key/Secret Key; el token general de Cloudflare no es compatible con
+  este flujo y devuelve 403 Access Denied). El bucket real de producción se
+  llama `cosmostrak-fotos` (nombrado así en el dashboard; el token de acceso
+  se llama `cosmos-token-r2` — son cosas distintas, no confundir el nombre
+  del token con el nombre del bucket al configurar `R2_BUCKET_NAME`).
+- El bucket tiene acceso público habilitado vía subdominio `r2.dev`
+  (`R2_PUBLIC_URL_BASE`); para producción real convendría un dominio propio
+  conectado al bucket en vez de depender del subdominio `r2.dev`
+  (no resuelto en esta sesión).
+- Verificado de punta a punta contra el bucket real: presign, `PUT` del
+  archivo, `GET` público del resultado (200, `image/png`), y borrado del
+  objeto de prueba.
 integración con Cloudflare R2 para fotos, envío de email por SMTP, gestión de
 usuarios admin/vendedor desde el frontend (la API ya existe, `POST
 /api/usuarios`), y el despliegue a producción (ver `## Despliegue` arriba).
