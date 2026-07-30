@@ -47,6 +47,8 @@ export function ClienteDetailPage() {
   const [apellido, setApellido] = useState("");
   const [telefono, setTelefono] = useState("");
   const [estado, setEstado] = useState<EstadoCliente>("activo");
+  const [trakzeeUsuario, setTrakzeeUsuario] = useState("");
+  const [trakzeePassword, setTrakzeePassword] = useState("");
   const [guardandoCliente, setGuardandoCliente] = useState(false);
   const [errorCliente, setErrorCliente] = useState<string | null>(null);
 
@@ -64,6 +66,8 @@ export function ClienteDetailPage() {
     setApellido(cliente.data.cliente.apellido);
     setTelefono(cliente.data.cliente.telefono);
     setEstado(cliente.data.cliente.estado);
+    setTrakzeeUsuario(cliente.data.cliente.trakzeeUsuario ?? "");
+    setTrakzeePassword(cliente.data.cliente.trakzeePassword ?? "");
     setErrorCliente(null);
     setEditandoCliente(true);
   }
@@ -72,7 +76,14 @@ export function ClienteDetailPage() {
     setGuardandoCliente(true);
     setErrorCliente(null);
     try {
-      await actualizarCliente(clienteId, { nombre, apellido, telefono, estado });
+      await actualizarCliente(clienteId, {
+        nombre,
+        apellido,
+        telefono,
+        estado,
+        trakzeeUsuario: trakzeeUsuario || undefined,
+        trakzeePassword: trakzeePassword || undefined,
+      });
       setEditandoCliente(false);
       cliente.reload();
     } catch (err) {
@@ -169,6 +180,26 @@ export function ClienteDetailPage() {
             ) : (
               <p className="text-sm text-slate-900 dark:text-white">{datosCliente.estado}</p>
             )}
+          </div>
+        </div>
+
+        <div className="mt-4 border-t border-slate-100 pt-4 dark:border-slate-800">
+          <p className="mb-3 text-xs font-medium text-slate-500 dark:text-slate-400">
+            Acceso a Trakzee (plataforma externa de rastreo, no es la contraseña de este sistema)
+          </p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <EditableField
+              label="Usuario Trakzee"
+              value={editandoCliente ? trakzeeUsuario : (datosCliente.trakzeeUsuario ?? "")}
+              editing={editandoCliente}
+              onChange={setTrakzeeUsuario}
+            />
+            <EditableField
+              label="Contraseña Trakzee"
+              value={editandoCliente ? trakzeePassword : (datosCliente.trakzeePassword ?? "")}
+              editing={editandoCliente}
+              onChange={setTrakzeePassword}
+            />
           </div>
         </div>
 

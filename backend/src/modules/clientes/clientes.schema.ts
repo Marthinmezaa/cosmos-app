@@ -9,6 +9,10 @@ const clienteDatosSchema = z.object({
   telefono: z.string(requerido("El teléfono")).trim().min(6, "Teléfono inválido").max(20),
   // Sección "fechas" del formulario: si no se manda, la base usa CURRENT_DATE.
   fechaAlta: z.string().date("Fecha inválida (usar YYYY-MM-DD)").optional(),
+  // Credenciales del cliente en Trakzee (plataforma externa de rastreo), no de
+  // cosmos-app: opcionales porque no todo cliente las tiene cargadas todavía.
+  trakzeeUsuario: z.string().trim().min(1).optional(),
+  trakzeePassword: z.string().trim().min(1).optional(),
 });
 
 const vehiculoDatosSchema = z.object({
@@ -57,6 +61,8 @@ export const actualizarClienteSchema = z
     apellido: z.string().trim().min(2).optional(),
     telefono: z.string().trim().min(6).max(20).optional(),
     estado: z.enum(["activo", "suspendido"]).optional(),
+    trakzeeUsuario: z.string().trim().min(1).optional(),
+    trakzeePassword: z.string().trim().min(1).optional(),
   })
   .refine((data) => Object.values(data).some((value) => value !== undefined), {
     message: "Enviá al menos un campo para actualizar",

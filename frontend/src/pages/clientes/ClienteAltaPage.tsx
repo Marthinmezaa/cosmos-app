@@ -10,6 +10,8 @@ interface FormState {
   nombre: string;
   apellido: string;
   telefono: string;
+  trakzeeUsuario: string;
+  trakzeePassword: string;
   tipo: string;
   marca: string;
   modelo: string;
@@ -29,6 +31,8 @@ const INITIAL_STATE: FormState = {
   nombre: "",
   apellido: "",
   telefono: "",
+  trakzeeUsuario: "",
+  trakzeePassword: "",
   tipo: "",
   marca: "",
   modelo: "",
@@ -103,6 +107,8 @@ export function ClienteAltaPage() {
           nombre: form.nombre,
           apellido: form.apellido,
           telefono: form.telefono,
+          trakzeeUsuario: form.trakzeeUsuario || undefined,
+          trakzeePassword: form.trakzeePassword || undefined,
         },
         vehiculo: {
           tipo: form.tipo,
@@ -179,6 +185,18 @@ export function ClienteAltaPage() {
           <Field label="Teléfono" name="telefono" value={form.telefono} onChange={setField} required />
           <Field label="Nombre" name="nombre" value={form.nombre} onChange={setField} required />
           <Field label="Apellido" name="apellido" value={form.apellido} onChange={setField} required />
+        </div>
+      </section>
+
+      <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+        <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Acceso a Trakzee (opcional)</h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Credenciales del cliente en la plataforma externa de rastreo (trakzee.uffizio.com), para consultarlas si se
+          las olvida. No son la contraseña de este sistema.
+        </p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Usuario Trakzee" name="trakzeeUsuario" value={form.trakzeeUsuario} onChange={setField} />
+          <Field label="Contraseña Trakzee" name="trakzeePassword" value={form.trakzeePassword} onChange={setField} />
         </div>
       </section>
 
