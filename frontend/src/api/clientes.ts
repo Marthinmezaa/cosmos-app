@@ -33,6 +33,8 @@ export interface ActualizarClienteInput {
   apellido?: string;
   telefono?: string;
   estado?: EstadoCliente;
+  trakzeeUsuario?: string;
+  trakzeePassword?: string;
 }
 
 export function actualizarCliente(id: number, input: ActualizarClienteInput): Promise<Cliente> {

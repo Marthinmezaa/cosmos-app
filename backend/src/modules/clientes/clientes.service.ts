@@ -27,7 +27,7 @@ import type {
   ListarClientesQuery,
 } from "./clientes.schema";
 
-function toPublicCliente(row: ClienteRow) {
+export function toPublicCliente(row: ClienteRow) {
   return {
     id: row.id,
     cedula: row.cedula,
@@ -37,6 +37,8 @@ function toPublicCliente(row: ClienteRow) {
     idClienteCode: row.id_cliente_code,
     fechaAlta: row.fecha_alta,
     estado: row.estado,
+    trakzeeUsuario: row.trakzee_usuario,
+    trakzeePassword: row.trakzee_password,
   };
 }
 
@@ -80,6 +82,8 @@ export async function crearClienteCompleto(input: CrearClienteInput) {
       apellido: input.cliente.apellido,
       telefono: input.cliente.telefono,
       fechaAlta: input.cliente.fechaAlta,
+      trakzeeUsuario: input.cliente.trakzeeUsuario,
+      trakzeePassword: input.cliente.trakzeePassword,
     });
 
     const vehiculo = await insertVehiculo(client, {

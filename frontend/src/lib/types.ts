@@ -26,6 +26,8 @@ export interface Cliente {
   idClienteCode: string;
   fechaAlta: string;
   estado: EstadoCliente;
+  trakzeeUsuario: string | null;
+  trakzeePassword: string | null;
 }
 
 export interface Vehiculo {
@@ -74,6 +76,8 @@ export interface CrearClienteInput {
     apellido: string;
     telefono: string;
     fechaAlta?: string;
+    trakzeeUsuario?: string;
+    trakzeePassword?: string;
   };
   vehiculo: {
     tipo: string;
@@ -221,6 +225,16 @@ export interface ListarMovimientosCajaResponse {
   total: number;
   page: number;
   pageSize: number;
+}
+
+export interface EstadoCuentaContrato {
+  contrato: Contrato;
+  cuotas: Cuota[];
+}
+
+export interface EstadoCuenta {
+  cliente: Cliente;
+  contratos: EstadoCuentaContrato[];
 }
 
 export interface MetaMensual {

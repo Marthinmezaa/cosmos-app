@@ -13,6 +13,8 @@ export interface ClienteRow {
   id_cliente_code: string;
   fecha_alta: string;
   estado: "activo" | "suspendido";
+  trakzee_usuario: string | null;
+  trakzee_password: string | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -56,14 +58,24 @@ export interface InsertClienteInput {
   apellido: string;
   telefono: string;
   fechaAlta?: string;
+  trakzeeUsuario?: string;
+  trakzeePassword?: string;
 }
 
 export async function insertCliente(db: Queryable, input: InsertClienteInput): Promise<ClienteRow> {
   const { rows } = await db.query<ClienteRow>(
-    `INSERT INTO clientes (cedula, nombre, apellido, telefono, fecha_alta)
-     VALUES ($1, $2, $3, $4, COALESCE($5, CURRENT_DATE))
+    `INSERT INTO clientes (cedula, nombre, apellido, telefono, fecha_alta, trakzee_usuario, trakzee_password)
+     VALUES ($1, $2, $3, $4, COALESCE($5, CURRENT_DATE), $6, $7)
      RETURNING *`,
-    [input.cedula, input.nombre, input.apellido, input.telefono, input.fechaAlta ?? null],
+    [
+      input.cedula,
+      input.nombre,
+      input.apellido,
+      input.telefono,
+      input.fechaAlta ?? null,
+      input.trakzeeUsuario ?? null,
+      input.trakzeePassword ?? null,
+    ],
   );
   return rows[0];
 }
@@ -196,6 +208,8 @@ export interface UpdateClienteInput {
   apellido?: string;
   telefono?: string;
   estado?: "activo" | "suspendido";
+  trakzeeUsuario?: string;
+  trakzeePassword?: string;
 }
 
 export async function updateCliente(id: number, input: UpdateClienteInput): Promise<ClienteRow | null> {
@@ -204,6 +218,8 @@ export async function updateCliente(id: number, input: UpdateClienteInput): Prom
     apellido: input.apellido,
     telefono: input.telefono,
     estado: input.estado,
+    trakzee_usuario: input.trakzeeUsuario,
+    trakzee_password: input.trakzeePassword,
   };
 
   const { setClause, values } = buildUpdateClause(fields);

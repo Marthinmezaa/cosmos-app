@@ -30,6 +30,9 @@ una empresa de rastreo GPS vehicular en Paraguay.
 - **vendedor**: solo puede dar de alta clientes (datos personales, vehículo, equipo, fotos
   opcionales). No ve caja, stock, comisiones ni otros clientes.
 - **cliente**: portal de solo lectura de su propio estado de cuenta (cuotas, vencimientos).
+  **En la práctica nadie usa este rol** (ver `## Portal de cliente`): el cliente real
+  nunca entra a cosmos-app, entra a Trakzee (plataforma externa de rastreo) desde el
+  link de cosmostrak.com.
 
 ## Reglas de negocio clave
 
@@ -207,10 +210,53 @@ Postgres real en Railway:
   cargada directamente por el admin, en vez del cálculo de crecimiento interanual del
   Excel original.
 
-Pendiente, fuera de alcance a propósito hasta que se pida explícitamente: portal de
-cliente (solo placeholder), integración con Cloudflare R2 para fotos, envío de email
-por SMTP, gestión de usuarios admin/vendedor desde el frontend (la API ya existe,
-`POST /api/usuarios`), y el despliegue a producción (ver `## Despliegue` arriba).
+Pendiente, fuera de alcance a propósito hasta que se pida explícitamente:
+integración con Cloudflare R2 para fotos, envío de email por SMTP, gestión de
+usuarios admin/vendedor desde el frontend (la API ya existe, `POST
+/api/usuarios`), y el despliegue a producción (ver `## Despliegue` arriba).
+
+## Portal de cliente (infraestructura sin uso activo)
+
+Hecho el `2026-07-30`, y **corregido el mismo día** tras aclarar con el usuario
+cómo funciona realmente el acceso de clientes: los clientes de Cosmostrak
+**nunca entran a cosmos-app**. El link "acceso a clientes" de cosmostrak.com
+los manda a Trakzee (`https://trakzee.uffizio.com`), una plataforma externa de
+rastreo GPS ajena a este sistema, donde ven su vehículo/flota con credenciales
+de esa plataforma — no de acá. La columna CONTRASEÑA del Excel migrado (nunca
+importada, ver `## Migración de datos históricos del Excel`) guardaba esas
+credenciales de Trakzee para que el staff las consultara si el cliente se las
+olvidaba, no contraseñas de un login propio.
+
+Dado esto, el rol `cliente` (JWT, `usuarios.cliente_id`,
+`GET /api/portal/estado-cuenta` en `backend/src/modules/portal/`, la página
+`/mi-cuenta`) se **mantiene tal cual está construido, pero es infraestructura
+sin uso activo**: nadie va a loguearse con ese rol en el uso real de la
+aplicación, y a propósito no existe ningún flujo que cree cuentas `cliente`
+(ni el alta de cliente, ni la migración del Excel crean una). No es un bug ni
+un hueco pendiente — es la decisión confirmada con el usuario. Si en el futuro
+se decide dar acceso directo a clientes, ahí sí habría que construir el flujo
+de creación de esas cuentas; hasta entonces, no tocar.
+
+## Credenciales de Trakzee por cliente
+
+Hecho el `2026-07-30`, para reemplazar la columna CONTRASEÑA (y USUARIO) del
+Excel: `clientes.trakzee_usuario` / `clientes.trakzee_password`
+(`backend/migrations/..._clientes-credenciales-trakzee.sql`), dos columnas de
+texto libre, nullable, editables por admin o vendedor en el alta
+(`POST /api/clientes`) y por admin en la edición (`PATCH /api/clientes/:id`).
+
+- **Se guardan en texto plano a propósito**: no son un secreto que cosmos-app
+  deba proteger (no es la contraseña de ningún usuario de este sistema), son
+  un dato de referencia de una plataforma externa — el staff necesita poder
+  leerlas tal cual para pasárselas al cliente si se las olvida, igual que las
+  tenían en el Excel. Por eso no pasan por `bcryptjs` ni por el flujo de
+  `usuarios`/`authenticate`.
+- Ambos campos son opcionales: no todo cliente tiene Trakzee cargado todavía
+  (y los 177 clientes migrados del Excel no tienen estos datos — quedaron sin
+  importar cuando se hizo la migración histórica, antes de que existieran
+  estas columnas; cargarlos es una tarea de datos aparte, no resuelta acá).
+- Verificado contra la base real de Railway: alta con credenciales, edición
+  parcial (solo password), y borrado del registro de prueba.
 
 ## Migración de datos históricos del Excel
 
