@@ -5,7 +5,7 @@ import { listarContratosDeCliente } from "../../api/contratos";
 import { useAsync } from "../../hooks/useAsync";
 import { ApiError } from "../../lib/api-client";
 import { formatFecha, formatGuaranies } from "../../lib/format";
-import type { EstadoCliente } from "../../lib/types";
+import type { Equipo, EstadoCliente, Vehiculo } from "../../lib/types";
 
 function EditableField({
   label,
@@ -35,6 +35,174 @@ function EditableField({
   );
 }
 
+function VehiculoCard({
+  clienteId,
+  vehiculo,
+  onGuardado,
+}: {
+  clienteId: number;
+  vehiculo: Vehiculo;
+  onGuardado: () => void;
+}) {
+  const [editando, setEditando] = useState(false);
+  const [kilometraje, setKilometraje] = useState(String(vehiculo.kilometraje));
+  const [guardando, setGuardando] = useState(false);
+
+  async function guardar(): Promise<void> {
+    setGuardando(true);
+    try {
+      await actualizarVehiculo(clienteId, vehiculo.id, { kilometraje: Number(kilometraje) });
+      setEditando(false);
+      onGuardado();
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+        <p className="text-sm font-medium text-slate-900 dark:text-white">
+          {vehiculo.marca} {vehiculo.modelo} ({vehiculo.anio})
+        </p>
+        {!editando && (
+          <button
+            type="button"
+            onClick={() => {
+              setKilometraje(String(vehiculo.kilometraje));
+              setEditando(true);
+            }}
+            className="text-sm font-medium text-purple-600 hover:underline dark:text-purple-400"
+          >
+            Editar kilometraje
+          </button>
+        )}
+      </div>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        <div>
+          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Tipo</p>
+          <p className="text-sm text-slate-900 dark:text-white">{vehiculo.tipo}</p>
+        </div>
+        <div>
+          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Chapa</p>
+          <p className="text-sm text-slate-900 dark:text-white">{vehiculo.chapa || "—"}</p>
+        </div>
+        <div>
+          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Kilometraje</p>
+          {editando ? (
+            <input
+              type="number"
+              value={kilometraje}
+              onChange={(e) => setKilometraje(e.target.value)}
+              className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+            />
+          ) : (
+            <p className="text-sm text-slate-900 dark:text-white">{vehiculo.kilometraje} km</p>
+          )}
+        </div>
+      </div>
+      {editando && (
+        <div className="mt-3 flex gap-2">
+          <button
+            type="button"
+            onClick={guardar}
+            disabled={guardando}
+            className="rounded-md bg-purple-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-60"
+          >
+            Guardar
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditando(false)}
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 dark:border-slate-700 dark:text-slate-200"
+          >
+            Cancelar
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EquipoCard({ clienteId, equipo, onGuardado }: { clienteId: number; equipo: Equipo; onGuardado: () => void }) {
+  const [editando, setEditando] = useState(false);
+  const [operadora, setOperadora] = useState(equipo.operadora);
+  const [guardando, setGuardando] = useState(false);
+
+  async function guardar(): Promise<void> {
+    setGuardando(true);
+    try {
+      await actualizarEquipo(clienteId, equipo.id, { operadora });
+      setEditando(false);
+      onGuardado();
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+        <p className="text-sm font-medium text-slate-900 dark:text-white">{equipo.marcaEquipo}</p>
+        {!editando && (
+          <button
+            type="button"
+            onClick={() => {
+              setOperadora(equipo.operadora);
+              setEditando(true);
+            }}
+            className="text-sm font-medium text-purple-600 hover:underline dark:text-purple-400"
+          >
+            Editar operadora
+          </button>
+        )}
+      </div>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        <div>
+          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">IMEI</p>
+          <p className="text-sm text-slate-900 dark:text-white">{equipo.imei}</p>
+        </div>
+        <div>
+          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Chip</p>
+          <p className="text-sm text-slate-900 dark:text-white">{equipo.numeroChip}</p>
+        </div>
+        <div>
+          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Operadora</p>
+          {editando ? (
+            <input
+              type="text"
+              value={operadora}
+              onChange={(e) => setOperadora(e.target.value)}
+              className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+            />
+          ) : (
+            <p className="text-sm text-slate-900 dark:text-white">{equipo.operadora}</p>
+          )}
+        </div>
+      </div>
+      {editando && (
+        <div className="mt-3 flex gap-2">
+          <button
+            type="button"
+            onClick={guardar}
+            disabled={guardando}
+            className="rounded-md bg-purple-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-60"
+          >
+            Guardar
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditando(false)}
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 dark:border-slate-700 dark:text-slate-200"
+          >
+            Cancelar
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ClienteDetailPage() {
   const { id } = useParams<{ id: string }>();
   const clienteId = Number(id);
@@ -51,14 +219,6 @@ export function ClienteDetailPage() {
   const [trakzeePassword, setTrakzeePassword] = useState("");
   const [guardandoCliente, setGuardandoCliente] = useState(false);
   const [errorCliente, setErrorCliente] = useState<string | null>(null);
-
-  const [editandoVehiculo, setEditandoVehiculo] = useState(false);
-  const [kilometraje, setKilometraje] = useState("");
-  const [guardandoVehiculo, setGuardandoVehiculo] = useState(false);
-
-  const [editandoEquipo, setEditandoEquipo] = useState(false);
-  const [operadora, setOperadora] = useState("");
-  const [guardandoEquipo, setGuardandoEquipo] = useState(false);
 
   function empezarEdicionCliente(): void {
     if (!cliente.data) return;
@@ -93,33 +253,11 @@ export function ClienteDetailPage() {
     }
   }
 
-  async function guardarVehiculo(): Promise<void> {
-    setGuardandoVehiculo(true);
-    try {
-      await actualizarVehiculo(clienteId, { kilometraje: Number(kilometraje) });
-      setEditandoVehiculo(false);
-      cliente.reload();
-    } finally {
-      setGuardandoVehiculo(false);
-    }
-  }
-
-  async function guardarEquipo(): Promise<void> {
-    setGuardandoEquipo(true);
-    try {
-      await actualizarEquipo(clienteId, { operadora });
-      setEditandoEquipo(false);
-      cliente.reload();
-    } finally {
-      setGuardandoEquipo(false);
-    }
-  }
-
   if (cliente.loading) return <p className="text-slate-500 dark:text-slate-400">Cargando…</p>;
   if (cliente.error) return <p className="text-red-600 dark:text-red-400">{cliente.error}</p>;
   if (!cliente.data) return null;
 
-  const { cliente: datosCliente, vehiculo, equipo, fotos } = cliente.data;
+  const { cliente: datosCliente, vehiculos, equipos, fotos } = cliente.data;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -226,137 +364,29 @@ export function ClienteDetailPage() {
         )}
       </section>
 
-      {vehiculo && (
+      {vehiculos.length > 0 && (
         <section className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Vehículo</h2>
-            {!editandoVehiculo && (
-              <button
-                type="button"
-                onClick={() => {
-                  setKilometraje(String(vehiculo.kilometraje));
-                  setEditandoVehiculo(true);
-                }}
-                className="text-sm font-medium text-purple-600 hover:underline dark:text-purple-400"
-              >
-                Editar kilometraje
-              </button>
-            )}
+          <h2 className="mb-3 text-sm font-semibold text-slate-900 dark:text-white">
+            Vehículos{vehiculos.length > 1 ? ` (${vehiculos.length})` : ""}
+          </h2>
+          <div className="space-y-3">
+            {vehiculos.map((vehiculo) => (
+              <VehiculoCard key={vehiculo.id} clienteId={clienteId} vehiculo={vehiculo} onGuardado={cliente.reload} />
+            ))}
           </div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <div>
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Tipo</p>
-              <p className="text-sm text-slate-900 dark:text-white">{vehiculo.tipo}</p>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Marca / Modelo</p>
-              <p className="text-sm text-slate-900 dark:text-white">
-                {vehiculo.marca} {vehiculo.modelo} ({vehiculo.anio})
-              </p>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Chapa</p>
-              <p className="text-sm text-slate-900 dark:text-white">{vehiculo.chapa || "—"}</p>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Kilometraje</p>
-              {editandoVehiculo ? (
-                <input
-                  type="number"
-                  value={kilometraje}
-                  onChange={(e) => setKilometraje(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                />
-              ) : (
-                <p className="text-sm text-slate-900 dark:text-white">{vehiculo.kilometraje} km</p>
-              )}
-            </div>
-          </div>
-          {editandoVehiculo && (
-            <div className="mt-4 flex gap-2">
-              <button
-                type="button"
-                onClick={guardarVehiculo}
-                disabled={guardandoVehiculo}
-                className="rounded-md bg-purple-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-60"
-              >
-                Guardar
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditandoVehiculo(false)}
-                className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 dark:border-slate-700 dark:text-slate-200"
-              >
-                Cancelar
-              </button>
-            </div>
-          )}
         </section>
       )}
 
-      {equipo && (
+      {equipos.length > 0 && (
         <section className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Equipo GPS</h2>
-            {!editandoEquipo && (
-              <button
-                type="button"
-                onClick={() => {
-                  setOperadora(equipo.operadora);
-                  setEditandoEquipo(true);
-                }}
-                className="text-sm font-medium text-purple-600 hover:underline dark:text-purple-400"
-              >
-                Editar operadora
-              </button>
-            )}
+          <h2 className="mb-3 text-sm font-semibold text-slate-900 dark:text-white">
+            Equipos GPS{equipos.length > 1 ? ` (${equipos.length})` : ""}
+          </h2>
+          <div className="space-y-3">
+            {equipos.map((equipo) => (
+              <EquipoCard key={equipo.id} clienteId={clienteId} equipo={equipo} onGuardado={cliente.reload} />
+            ))}
           </div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <div>
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Marca</p>
-              <p className="text-sm text-slate-900 dark:text-white">{equipo.marcaEquipo}</p>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">IMEI</p>
-              <p className="text-sm text-slate-900 dark:text-white">{equipo.imei}</p>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Chip</p>
-              <p className="text-sm text-slate-900 dark:text-white">{equipo.numeroChip}</p>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Operadora</p>
-              {editandoEquipo ? (
-                <input
-                  type="text"
-                  value={operadora}
-                  onChange={(e) => setOperadora(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                />
-              ) : (
-                <p className="text-sm text-slate-900 dark:text-white">{equipo.operadora}</p>
-              )}
-            </div>
-          </div>
-          {editandoEquipo && (
-            <div className="mt-4 flex gap-2">
-              <button
-                type="button"
-                onClick={guardarEquipo}
-                disabled={guardandoEquipo}
-                className="rounded-md bg-purple-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-60"
-              >
-                Guardar
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditandoEquipo(false)}
-                className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 dark:border-slate-700 dark:text-slate-200"
-              >
-                Cancelar
-              </button>
-            </div>
-          )}
         </section>
       )}
 

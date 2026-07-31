@@ -14,3 +14,22 @@ export const crearUsuarioSchema = z.object({
 });
 
 export type CrearUsuarioInput = z.infer<typeof crearUsuarioSchema>;
+
+export const listarUsuariosQuerySchema = z.object({
+  rol: z.enum(["admin", "vendedor"]).optional(),
+  // z.coerce.boolean() no sirve para query params: Boolean("false") da true. Se
+  // valida el string explícito y recién ahí se convierte.
+  activo: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((value) => (value === undefined ? undefined : value === "true")),
+  busqueda: z.string().trim().min(1).optional(),
+});
+
+export type ListarUsuariosQuery = z.infer<typeof listarUsuariosQuerySchema>;
+
+export const actualizarActivoSchema = z.object({
+  activo: z.boolean(),
+});
+
+export type ActualizarActivoInput = z.infer<typeof actualizarActivoSchema>;

@@ -14,6 +14,15 @@ const envSchema = z.object({
   // URL pública del bucket (R2.dev o dominio propio), sin barra final. Ej:
   // https://pub-xxxxxxxx.r2.dev
   R2_PUBLIC_URL_BASE: z.string().url("R2_PUBLIC_URL_BASE debe ser una URL válida"),
+  SMTP_HOST: z.string().min(1, "SMTP_HOST es obligatorio"),
+  SMTP_PORT: z.coerce.number().int().positive().default(465),
+  SMTP_SECURE: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((value) => value === "true"),
+  SMTP_USER: z.string().min(1, "SMTP_USER es obligatorio"),
+  SMTP_PASSWORD: z.string().min(1, "SMTP_PASSWORD es obligatorio"),
+  MAIL_FROM: z.string().default("Cosmostrak <info@cosmostrak.com.py>"),
 });
 
 function loadEnv() {

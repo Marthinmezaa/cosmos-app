@@ -3,8 +3,10 @@ import { translatePgError } from "../../utils/db-errors";
 import { notFound } from "../../utils/errors";
 import {
   findClienteById,
-  findEquipoByClienteId,
-  findVehiculoByClienteId,
+  findEquipoById,
+  findEquiposByClienteId,
+  findVehiculoById,
+  findVehiculosByClienteId,
   insertCliente,
   insertEquipo,
   insertFoto,
@@ -115,8 +117,11 @@ export async function crearClienteCompleto(input: CrearClienteInput) {
 
     return {
       cliente: toPublicCliente(cliente),
-      vehiculo: toPublicVehiculo(vehiculo),
-      equipo: toPublicEquipo(equipo),
+      // El alta siempre crea uno solo (regla de negocio, ver clientes.schema.ts):
+      // se envuelve en array acá para que la forma coincida con obtenerClienteCompleto,
+      // que sí puede traer varios en un cliente con flota.
+      vehiculos: [toPublicVehiculo(vehiculo)],
+      equipos: [toPublicEquipo(equipo)],
       fotos: fotos.map(toPublicFoto),
     };
   } catch (err) {
@@ -149,16 +154,18 @@ export async function obtenerClienteCompleto(id: number) {
     throw notFound("El cliente no existe");
   }
 
-  const [vehiculo, equipo, fotos] = await Promise.all([
-    findVehiculoByClienteId(id),
-    findEquipoByClienteId(id),
+  // Un cliente con flota tiene varios vehículos/equipos (ej. 9-14): siempre listas,
+  // nunca un solo registro.
+  const [vehiculos, equipos, fotos] = await Promise.all([
+    findVehiculosByClienteId(id),
+    findEquiposByClienteId(id),
     listFotosByClienteId(id),
   ]);
 
   return {
     cliente: toPublicCliente(cliente),
-    vehiculo: vehiculo ? toPublicVehiculo(vehiculo) : null,
-    equipo: equipo ? toPublicEquipo(equipo) : null,
+    vehiculos: vehiculos.map(toPublicVehiculo),
+    equipos: equipos.map(toPublicEquipo),
     fotos: fotos.map(toPublicFoto),
   };
 }
@@ -177,28 +184,32 @@ export async function actualizarClienteDatos(id: number, input: ActualizarClient
   }
 }
 
-export async function actualizarVehiculoDeCliente(clienteId: number, input: ActualizarVehiculoInput) {
-  const existente = await findVehiculoByClienteId(clienteId);
-  if (!existente) {
-    throw notFound("El cliente no tiene un vehículo registrado");
+export async function actualizarVehiculoDeCliente(
+  clienteId: number,
+  vehiculoId: number,
+  input: ActualizarVehiculoInput,
+) {
+  const existente = await findVehiculoById(vehiculoId);
+  if (!existente || existente.cliente_id !== clienteId) {
+    throw notFound("El vehículo no existe para este cliente");
   }
 
   try {
-    const actualizado = await updateVehiculo(clienteId, input);
+    const actualizado = await updateVehiculo(vehiculoId, input);
     return toPublicVehiculo(actualizado!);
   } catch (err) {
     throw translatePgError(err) ?? err;
   }
 }
 
-export async function actualizarEquipoDeCliente(clienteId: number, input: ActualizarEquipoInput) {
-  const existente = await findEquipoByClienteId(clienteId);
-  if (!existente) {
-    throw notFound("El cliente no tiene un equipo registrado");
+export async function actualizarEquipoDeCliente(clienteId: number, equipoId: number, input: ActualizarEquipoInput) {
+  const existente = await findEquipoById(equipoId);
+  if (!existente || existente.cliente_id !== clienteId) {
+    throw notFound("El equipo no existe para este cliente");
   }
 
   try {
-    const actualizado = await updateEquipo(clienteId, input);
+    const actualizado = await updateEquipo(equipoId, input);
     return toPublicEquipo(actualizado!);
   } catch (err) {
     throw translatePgError(err) ?? err;

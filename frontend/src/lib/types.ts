@@ -15,6 +15,20 @@ export interface LoginResponse {
   usuario: Usuario;
 }
 
+export type RolGestionable = "admin" | "vendedor";
+
+export interface CrearUsuarioInput {
+  nombre: string;
+  email: string;
+  password: string;
+  rol: RolGestionable;
+}
+
+export interface ResetPasswordResponse {
+  usuario: Usuario;
+  passwordTemporal: string;
+}
+
 export type EstadoCliente = "activo" | "suspendido";
 
 export interface Cliente {
@@ -57,8 +71,8 @@ export interface Foto {
 
 export interface ClienteCompleto {
   cliente: Cliente;
-  vehiculo: Vehiculo | null;
-  equipo: Equipo | null;
+  vehiculos: Vehiculo[];
+  equipos: Equipo[];
   fotos: Foto[];
 }
 

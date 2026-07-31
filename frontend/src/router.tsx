@@ -6,6 +6,7 @@ import { MiCuentaPage } from "./pages/MiCuentaPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { CajaPage } from "./pages/CajaPage";
 import { MetasPage } from "./pages/MetasPage";
+import { UsuariosPage } from "./pages/UsuariosPage";
 import { ClientesListPage } from "./pages/clientes/ClientesListPage";
 import { ClienteAltaPage } from "./pages/clientes/ClienteAltaPage";
 import { ClienteDetailPage } from "./pages/clientes/ClienteDetailPage";
@@ -26,6 +27,7 @@ export const router = createBrowserRouter([
               { path: "/", element: <DashboardPage /> },
               { path: "/caja", element: <CajaPage /> },
               { path: "/metas", element: <MetasPage /> },
+              { path: "/usuarios", element: <UsuariosPage /> },
               { path: "/clientes", element: <ClientesListPage /> },
               { path: "/clientes/:id", element: <ClienteDetailPage /> },
               { path: "/contratos/:id", element: <ContratoDetailPage /> },

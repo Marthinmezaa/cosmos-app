@@ -21,5 +21,5 @@ clientesRouter.post("/", authorize("admin", "vendedor"), asyncHandler(crearClien
 clientesRouter.get("/", authorize("admin"), asyncHandler(listarClientesHandler));
 clientesRouter.get("/:id", authorize("admin"), asyncHandler(obtenerCliente));
 clientesRouter.patch("/:id", authorize("admin"), asyncHandler(actualizarCliente));
-clientesRouter.patch("/:id/vehiculo", authorize("admin"), asyncHandler(actualizarVehiculo));
-clientesRouter.patch("/:id/equipo", authorize("admin"), asyncHandler(actualizarEquipo));
+clientesRouter.patch("/:id/vehiculos/:vehiculoId", authorize("admin"), asyncHandler(actualizarVehiculo));
+clientesRouter.patch("/:id/equipos/:equipoId", authorize("admin"), asyncHandler(actualizarEquipo));

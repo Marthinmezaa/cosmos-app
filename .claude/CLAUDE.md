@@ -215,6 +215,239 @@ envío de email por SMTP, gestión de usuarios admin/vendedor desde el frontend
 (la API ya existe, `POST /api/usuarios`), y el despliegue a producción (ver
 `## Despliegue` arriba).
 
+**Decisión de alcance (`2026-07-31`)**: hoy se trabaja en tres de los pendientes
+de arriba — envío de email por SMTP (**hecho**, ver `## Envío de email por SMTP`
+abajo), gestión de usuarios admin/vendedor desde el frontend (**hecho**, ver
+`## Gestión de usuarios admin/vendedor desde el frontend` abajo), y una vista de
+flota en el detalle de cliente (**hecho**, ver `## Vista de flota en el detalle
+de cliente` abajo). Confirmado con el usuario: el **despliegue a producción** y
+la **limpieza de datos pendientes de la migración del Excel** (placeholders
+`SIN-CEDULA-XXXX`/`SIN-IMEI-XXXX`, las 25 filas con chapa/IMEI duplicado,
+credenciales Trakzee de los 177 clientes migrados, costos incompletos de
+clientes con flota) quedan **explícitamente pospuestos** hasta que el cliente
+pida empezar a usar el programa — no son parte del trabajo de esta sesión ni de
+las inmediatas siguientes.
+
+## Envío de email por SMTP
+
+Hecho el `2026-07-31`: reemplaza el "pendiente" de enviar por mail la
+contraseña temporal que genera `POST /api/usuarios/:id/reset-password`. Usa
+`nodemailer` contra el buzón real `info@cosmostrak.com.py`, hosteado en
+Hostinger (`smtp.hostinger.com:465`, SSL).
+
+- `backend/src/config/mailer.ts`: crea el transporter de `nodemailer` a partir
+  de `env` (mismo patrón que `config/r2.ts` con el `S3Client`).
+- `backend/src/utils/mailer.ts` (`enviarPasswordTemporal`): arma y envía el
+  mail. **Nunca lanza** — si el SMTP falla (caído, credenciales vencidas),
+  solo loguea el error por consola; el reset de contraseña en la base ya se
+  hizo antes de llamar acá y la respuesta HTTP igual sigue devolviendo la
+  contraseña temporal en el JSON (sin cambios respecto a antes), así el admin
+  puede pasarla a mano si el mail no llegó.
+- Variables nuevas en `src/config/env.ts` (obligatorias salvo defaults):
+  `SMTP_HOST`, `SMTP_PORT` (default `465`), `SMTP_SECURE` (default `true`),
+  `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM` (default
+  `Cosmostrak <info@cosmostrak.com.py>`). Credenciales del buzón: hPanel de
+  Hostinger → **Correos electrónicos** → `info@cosmostrak.com.py` → "Configurar
+  cliente de correo" (ahí se ven host/puerto) o "Cambiar contraseña" si no se
+  conoce la actual.
+- Verificado con un script puntual (no versionado, corrido y borrado en la
+  misma sesión) que abrió la conexión SMTP real y mandó un mail de prueba a la
+  propia casilla `info@cosmostrak.com.py` — llegó correctamente.
+- Verificado también de punta a punta a través de la UI real (ver siguiente
+  sección): el reset de contraseña desde `/usuarios` dispara el envío sin
+  romper la respuesta, incluso a una casilla inexistente (`test.qa@cosmostrak.com.py`,
+  usuario de prueba borrado después).
+
+## Gestión de usuarios admin/vendedor desde el frontend
+
+Hecho el `2026-07-31`: hasta ahora `POST /api/usuarios` (alta) y
+`PATCH /api/usuarios/:id/reset-password` existían solo como API sin UI. Se
+agregó una página `/usuarios` (nav solo para `admin`, mismo rol que ya exigía
+el router) con alta, listado con filtros, reset de contraseña y activar/
+desactivar cuenta.
+
+- **Nuevos endpoints backend** (`usuarios.routes.ts`, mismo router ya
+  restringido a `admin`): `GET /api/usuarios` (lista cuentas
+  `admin`/`vendedor`, filtros opcionales `rol`, `activo`, `busqueda` por
+  nombre/email — sin paginación a propósito, son pocas decenas de cuentas) y
+  `PATCH /api/usuarios/:id/activo` (`{ activo: boolean }`). La columna
+  `usuarios.activo` ya existía y `middleware/authenticate.ts` ya la revisa en
+  cada request; antes de esto no había ninguna forma de ponerla en `false`
+  salvo SQL a mano.
+- **Guard de seguridad** (`usuarios.service.ts`, `actualizarActivoUsuario`):
+  un admin no puede desactivar su propia cuenta (`badRequest` si
+  `usuarioId === req.user.id`) — evita que el único admin logueado se bloquee
+  a sí mismo sin querer. Probado en vivo contra la cuenta real
+  `admin@cosmostrak.com.py`.
+- **Frontend**: página única `frontend/src/pages/UsuariosPage.tsx` (patrón
+  tipo `MetasPage.tsx`: formulario de alta + tabla con acciones inline, no
+  una página de alta separada como clientes, porque el volumen de cuentas es
+  chico). El reset de contraseña muestra la `passwordTemporal` una única vez
+  en un panel dismissable (aclarando que también se mandó por email). Desactivar
+  pide confirmación **inline** en la fila (¿Seguro? / Sí, desactivar /
+  Cancelar) — **a propósito no usa `window.confirm()`**: se probó primero con
+  el diálogo nativo del navegador y bloqueó la conexión CDP de automatización
+  30s (`Input.dispatchMouseEvent` timeout); la confirmación inline evita ese
+  problema y es consistente con que el resto del frontend no usa diálogos
+  nativos en ningún lado.
+- `frontend/src/api/usuarios.ts` nuevo; tipos `CrearUsuarioInput`,
+  `ResetPasswordResponse`, `RolGestionable` agregados a `lib/types.ts`.
+- Verificado de punta a punta en la UI real (login admin real): alta de un
+  usuario de prueba, filtro por nombre, reset de contraseña (mostró la
+  temporal y no rompió aunque el email de destino no existiera), desactivar
+  con confirmación inline, activar de nuevo, e intento de auto-desactivación
+  del admin logueado (rechazado con el mensaje esperado). Usuario de prueba
+  borrado de la base al terminar.
+
+## Vista de flota en el detalle de cliente
+
+Hecho el `2026-07-31`, con alcance reducido a propósito (confirmado con el
+usuario): **solo** mostrar todos los vehículos/equipos de un cliente y arreglar
+un bug real de corrupción de datos; **no** se agregó ningún vínculo
+vehículo↔equipo↔contrato (ver más abajo por qué).
+
+- **Bug real encontrado y arreglado**: `clientes.repository.ts`
+  `updateVehiculo`/`updateEquipo` actualizaban por `cliente_id` en vez de por
+  `id` de fila. Para un cliente con un solo vehículo esto "funcionaba" porque
+  coincidía, pero para un cliente con flota (ej. RH Transport S.A., 9
+  vehículos) editar el kilometraje de **uno** sobrescribía el kilometraje de
+  **todos** los vehículos de ese cliente — invisible hasta hoy porque ningún
+  cliente de flota había probado esa edición. Arreglado: ahora actualizan por
+  `id` de vehículo/equipo, validando en `clientes.service.ts` que esa fila
+  pertenezca al `clienteId` de la URL (404 si no).
+- **Rutas cambiadas** (breaking, sin necesidad de compatibilidad hacia atrás
+  porque nada en producción depende todavía de la forma vieja): `PATCH
+  /api/clientes/:id/vehiculo` → `PATCH /api/clientes/:id/vehiculos/:vehiculoId`,
+  mismo patrón para `equipos`. `GET /api/clientes/:id` (`obtenerClienteCompleto`)
+  ahora devuelve `vehiculos: Vehiculo[]` y `equipos: Equipo[]` (antes
+  `vehiculo`/`equipo` singular nullable). `POST /api/clientes` (alta) sigue
+  creando uno solo de cada uno (no cambió esa regla de negocio), pero envuelve
+  la respuesta en arrays de un elemento para que la forma sea consistente con
+  `GET`.
+- **Frontend**: `ClienteDetailPage.tsx` reemplaza las secciones únicas de
+  "Vehículo"/"Equipo GPS" por listas (`VehiculoCard`/`EquipoCard`, un
+  componente por fila con su propio estado de edición), mismo patrón que la
+  sección de Contratos que ya era una lista. Con más de un vehículo/equipo el
+  título muestra la cantidad (ej. "Vehículos (9)").
+- **Decisión explícita de NO hacer** (confirmada con el usuario antes de
+  empezar): la base no tiene ningún FK que vincule un vehículo específico con
+  su equipo o su contrato — los tres son hijos independientes de `clientes`.
+  Reconstruir ese vínculo para los 177 clientes ya migrados del Excel
+  requeriría asumir que el orden de inserción original coincide con el orden
+  de fila del Excel (vehículo N ↔ equipo N ↔ contrato N), algo que no se puede
+  verificar con certeza y que si falla para algún cliente de flota, quedaría
+  mal vinculado en silencio. Por eso hoy la ficha del cliente muestra tres
+  listas independientes (vehículos, equipos, contratos), no "vehículo A con su
+  equipo y su contrato agrupados". Si en el futuro hace falta ese vínculo,
+  hay que agregar columnas `vehiculo_id` a `equipos` y `contratos` (nueva
+  migración) y decidir cómo backfillear los datos históricos con
+  aproximación manual, no automática.
+- No se agregó forma de crear un vehículo/equipo adicional a un cliente ya
+  existente desde la UI (el alta sigue creando exactamente uno de cada uno);
+  hoy la vista de flota es de lectura/edición sobre lo que ya existe, no de
+  alta de flota nueva. Pendiente si se necesita más adelante.
+- Verificado en vivo contra un cliente real con flota (`RH TRANSPORT S.A.`,
+  id 560, 9 vehículos/equipos/contratos): los 9 vehículos y 9 equipos se
+  listan completos, y editar el kilometraje de uno a un valor distintivo
+  (999999) confirmó que los otros 8 no se tocan — el bug quedó arreglado.
+  Valor restaurado al original después de la prueba.
+
+## Responsive: revisión y arreglos en modo celular
+
+Hecho el `2026-07-31`, a partir de una revisión pedida por el usuario de la
+experiencia en modo teléfono (resize a ~390-411px de ancho). Se encontraron y
+arreglaron 5 problemas reales:
+
+1. **Tablas recortadas sin scroll** (`ClientesListPage.tsx`, `UsuariosPage.tsx`,
+   `CajaPage.tsx`, `ContratoDetailPage.tsx`): el contenedor usaba
+   `overflow-hidden` (o, en el caso de `ContratoDetailPage`, ningún contenedor)
+   en vez de `overflow-x-auto`. En pantalla angosta, las columnas que no
+   entraban directamente desaparecían sin ninguna forma de verlas — en
+   `UsuariosPage` esto ocultaba toda la columna "Acciones"
+   (Resetear contraseña / Activar / Desactivar), haciendo esas acciones
+   **inalcanzables desde el teléfono**. Arreglado envolviendo cada `<table>`
+   en su propio `overflow-x-auto` (sin envolver también el pie de paginación
+   de Clientes/Caja, para que ese pie no se corra de vista al hacer scroll
+   horizontal de la tabla).
+2. **Header de `VehiculoCard`/`EquipoCard` sin wrap** (`ClienteDetailPage.tsx`):
+   con nombres largos (ej. "MERCEDES BENZ 1117 (1994)") el título chocaba
+   directo contra el link "Editar kilometraje"/"Editar operadora" sin espacio.
+   Arreglado con `flex-wrap gap-x-3 gap-y-1` en el header de la tarjeta.
+3. **Nav sin colapsar a hamburguesa** (`Layout.tsx`): antes los links se
+   acomodaban en 2-3 líneas en el header. Ahora hay un botón hamburguesa
+   (`md:hidden`, ícono SVG que cambia a "X") que despliega un menú vertical
+   con los links + usuario + "Salir"; en desktop (`md:flex`) se ve exactamente
+   igual que antes. El menú se cierra solo al navegar (`useEffect` sobre
+   `location.pathname`).
+4. **Nombres de cliente largos rompían la altura uniforme de las filas**
+   (`DashboardPage.tsx`, widgets "Vencen hoy"/"Vencen esta semana"/"Clientes en
+   mora"): un nombre largo envolvía en 4-5 líneas dentro de la celda,
+   agrandando esa fila sola. Primer intento (`table-fixed` con columnas en
+   porcentaje) generó un bug nuevo: "Vence"/"Monto" quedaban tan angostos que
+   el texto de una columna se superponía con el de la siguiente (ej.
+   "31/07/2026Gs. 100.0", con el monto cortado). Solución final: sin
+   `table-fixed`, solo la columna Cliente trunca (`max-w-[9rem] truncate`,
+   `sm:max-w-[14rem]`, sin límite desde `md:` para no truncar innecesariamente
+   en desktop donde sobra espacio) con `title` para ver el nombre completo al
+   pasar el mouse; el resto de las columnas (Cuota/Vence/Monto/Meses en mora)
+   llevan `whitespace-nowrap` para no envolver nunca.
+5. Verificado con el DOM real en el navegador (`scrollWidth`/`clientWidth` de
+   cada tabla) antes y después de cada arreglo, no solo visualmente — confirmó
+   que las columnas ocultas eran alcanzables por scroll después del fix. El
+   menú hamburguesa se probó disparando el click por DOM
+   (`querySelector(...).click()`) porque el simulador de mouse de la sesión de
+   automatización empezó a colgarse (timeout de `Input.dispatchMouseEvent`)
+   sin relación con el código de la app — no es un bug del proyecto.
+- Verificado también que nada se rompió en desktop: `Layout.tsx` usa el patrón
+  estándar de Tailwind `hidden md:flex` / `md:hidden`, confirmado visualmente
+  en el Dashboard a ancho de escritorio; los cambios de tabla son wrappers
+  `overflow-x-auto` puramente aditivos que no alteran nada cuando el contenido
+  ya entra en el ancho disponible (como pasa siempre en desktop).
+
+## Botón "Volver" (Layout)
+
+Hecho el `2026-07-31`, a partir de feedback directo del usuario probando el
+menú hamburguesa recién agregado: al entrar a la ficha de un cliente desde un
+link del Dashboard (o desde cualquier otro lado), no había forma de volver
+salvo reabrir el menú y tocar "Dashboard" de nuevo — mala experiencia,
+especialmente en celular donde el nav ya no está siempre visible.
+
+- `Layout.tsx` ahora calcula `esRutaDeMenu` (si `location.pathname` coincide
+  exacto con alguno de los `NAV_ITEMS`) y, si la ruta actual **no** es un
+  destino directo del menú (ficha de cliente `/clientes/:id`, detalle de
+  contrato `/contratos/:id`, alta de contrato `/clientes/:id/contratos/nuevo`),
+  muestra un botón "← Volver" arriba del contenido de la página. En las rutas
+  que sí son destino de menú (Dashboard, Clientes, Alta de cliente, Caja,
+  Metas, Usuarios, Mi cuenta) no aparece, porque ahí ya se llegó navegando
+  directo.
+- Usa `navigate(-1)` (historial del navegador dentro de la SPA), pero con
+  fallback: si `window.history.state.idx` es `0` (se entró directo a esa URL —
+  link compartido, recarga de página, escribir la URL a mano — no hay
+  historial propio de la app hacia dónde volver), en vez de sacar a la persona
+  de la aplicación manda a `defaultPathForRol(usuario.rol)` (la pantalla
+  principal de su rol). Un solo componente (`Layout.tsx`) resuelve esto para
+  todas las páginas "de detalle", sin tener que agregar un botón a mano en
+  cada una.
+- Verificado en vivo: Dashboard → clic en un cliente (mismo flujo que reportó
+  el usuario) → aparece "Volver" → vuelve exactamente al Dashboard. Probado
+  también entrando directo por URL a una ficha de cliente (sin navegar desde
+  adentro de la app): "Volver" cae a `/` en vez de intentar salir de la
+  aplicación.
+- **Segundo bug relacionado, encontrado por el usuario probando el botón**:
+  en `ClientesListPage.tsx`, la búsqueda/filtro de estado/página vivían en
+  `useState` local. Al entrar a la ficha de un cliente estando en la página 2
+  y volver, el componente se remonta desde cero y perdía la página — "Volver"
+  siempre caía en la página 1. Arreglado moviendo esos tres valores a la URL
+  (`useSearchParams`: `/clientes?busqueda=&estado=&page=`) en vez de estado
+  local, con `setSearchParams(next, { replace: true })` (reemplaza la entrada
+  de historial en vez de apilar una por cada tecla tipeada en el buscador, así
+  "Volver" no deshace letra por letra). Verificado en vivo: página 2 → cliente
+  → Volver → misma página 2; y por separado, con `busqueda=Juan` tipeado letra
+  por letra → cliente → Volver → `busqueda=Juan` completo (no una letra menos).
+  Caja tiene el mismo patrón de estado local pero no aplica hoy: sus filas no
+  son clickeables hacia otra página, así que no hay forma de disparar el bug
+  todavía — quedó sin tocar a propósito.
+
 ## Fotos en Cloudflare R2
 
 Hecho el `2026-07-30`: reemplaza el campo de "pegar URL ya subida" del alta
