@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/Marthinmezaa/cosmos-app/compare/backend-v1.6.0...backend-v1.7.0) (2026-07-31)
+
+
+### Features
+
+* SMTP, gestion de usuarios, vista de flota y mejoras responsive ([#22](https://github.com/Marthinmezaa/cosmos-app/issues/22)) ([08a1ef9](https://github.com/Marthinmezaa/cosmos-app/commit/08a1ef94f659f06ae9e5236681f073aa09f1f838))
+
 ## [1.6.0](https://github.com/Marthinmezaa/cosmos-app/compare/backend-v1.5.1...backend-v1.6.0) (2026-07-30)
 
 
