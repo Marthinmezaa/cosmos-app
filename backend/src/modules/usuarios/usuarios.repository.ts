@@ -44,3 +44,41 @@ export async function insertUsuario(input: CreateUsuarioInput): Promise<UsuarioR
 export async function updatePasswordHash(id: number, passwordHash: string): Promise<void> {
   await pool.query("UPDATE usuarios SET password_hash = $1 WHERE id = $2", [passwordHash, id]);
 }
+
+export interface ListUsuariosFilter {
+  rol?: "admin" | "vendedor";
+  activo?: boolean;
+  busqueda?: string;
+}
+
+export async function listUsuariosAdminVendedor(filter: ListUsuariosFilter): Promise<UsuarioRow[]> {
+  const conditions: string[] = ["rol IN ('admin', 'vendedor')"];
+  const values: unknown[] = [];
+
+  if (filter.rol) {
+    values.push(filter.rol);
+    conditions.push(`rol = $${values.length}`);
+  }
+  if (filter.activo !== undefined) {
+    values.push(filter.activo);
+    conditions.push(`activo = $${values.length}`);
+  }
+  if (filter.busqueda) {
+    values.push(`%${filter.busqueda}%`);
+    conditions.push(`(nombre ILIKE $${values.length} OR email ILIKE $${values.length})`);
+  }
+
+  const { rows } = await pool.query<UsuarioRow>(
+    `SELECT * FROM usuarios WHERE ${conditions.join(" AND ")} ORDER BY nombre ASC`,
+    values,
+  );
+  return rows;
+}
+
+export async function updateActivo(id: number, activo: boolean): Promise<UsuarioRow | null> {
+  const { rows } = await pool.query<UsuarioRow>(
+    "UPDATE usuarios SET activo = $1 WHERE id = $2 RETURNING *",
+    [activo, id],
+  );
+  return rows[0] ?? null;
+}

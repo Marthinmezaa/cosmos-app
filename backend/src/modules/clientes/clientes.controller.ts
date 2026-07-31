@@ -16,10 +16,10 @@ import {
   obtenerClienteCompleto,
 } from "./clientes.service";
 
-function parseClienteId(rawId: string): number {
+function parseId(rawId: string, entidad: string): number {
   const id = Number(rawId);
   if (!Number.isInteger(id)) {
-    throw badRequest("Id de cliente inválido");
+    throw badRequest(`Id de ${entidad} inválido`);
   }
   return id;
 }
@@ -45,13 +45,13 @@ export async function listarClientesHandler(req: Request, res: Response): Promis
 }
 
 export async function obtenerCliente(req: Request, res: Response): Promise<void> {
-  const id = parseClienteId(req.params.id);
+  const id = parseId(req.params.id, "cliente");
   const resultado = await obtenerClienteCompleto(id);
   res.json(resultado);
 }
 
 export async function actualizarCliente(req: Request, res: Response): Promise<void> {
-  const id = parseClienteId(req.params.id);
+  const id = parseId(req.params.id, "cliente");
   const parsed = actualizarClienteSchema.safeParse(req.body);
   if (!parsed.success) {
     throw badRequest(parsed.error.issues[0]?.message ?? "Datos inválidos");
@@ -62,23 +62,25 @@ export async function actualizarCliente(req: Request, res: Response): Promise<vo
 }
 
 export async function actualizarVehiculo(req: Request, res: Response): Promise<void> {
-  const id = parseClienteId(req.params.id);
+  const id = parseId(req.params.id, "cliente");
+  const vehiculoId = parseId(req.params.vehiculoId, "vehículo");
   const parsed = actualizarVehiculoSchema.safeParse(req.body);
   if (!parsed.success) {
     throw badRequest(parsed.error.issues[0]?.message ?? "Datos inválidos");
   }
 
-  const resultado = await actualizarVehiculoDeCliente(id, parsed.data);
+  const resultado = await actualizarVehiculoDeCliente(id, vehiculoId, parsed.data);
   res.json(resultado);
 }
 
 export async function actualizarEquipo(req: Request, res: Response): Promise<void> {
-  const id = parseClienteId(req.params.id);
+  const id = parseId(req.params.id, "cliente");
+  const equipoId = parseId(req.params.equipoId, "equipo");
   const parsed = actualizarEquipoSchema.safeParse(req.body);
   if (!parsed.success) {
     throw badRequest(parsed.error.issues[0]?.message ?? "Datos inválidos");
   }
 
-  const resultado = await actualizarEquipoDeCliente(id, parsed.data);
+  const resultado = await actualizarEquipoDeCliente(id, equipoId, parsed.data);
   res.json(resultado);
 }

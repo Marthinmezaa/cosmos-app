@@ -143,13 +143,31 @@ export async function findClienteById(id: number): Promise<ClienteRow | null> {
   return rows[0] ?? null;
 }
 
-export async function findVehiculoByClienteId(clienteId: number): Promise<VehiculoRow | null> {
-  const { rows } = await pool.query<VehiculoRow>("SELECT * FROM vehiculos WHERE cliente_id = $1", [clienteId]);
+// Un cliente con flota tiene varias filas acá (ej. 9-14 vehículos/equipos): nunca
+// asumir una sola fila por cliente, ver clientes.service.ts obtenerClienteCompleto.
+export async function findVehiculosByClienteId(clienteId: number): Promise<VehiculoRow[]> {
+  const { rows } = await pool.query<VehiculoRow>(
+    "SELECT * FROM vehiculos WHERE cliente_id = $1 ORDER BY id ASC",
+    [clienteId],
+  );
+  return rows;
+}
+
+export async function findEquiposByClienteId(clienteId: number): Promise<EquipoRow[]> {
+  const { rows } = await pool.query<EquipoRow>(
+    "SELECT * FROM equipos WHERE cliente_id = $1 ORDER BY id ASC",
+    [clienteId],
+  );
+  return rows;
+}
+
+export async function findVehiculoById(id: number): Promise<VehiculoRow | null> {
+  const { rows } = await pool.query<VehiculoRow>("SELECT * FROM vehiculos WHERE id = $1", [id]);
   return rows[0] ?? null;
 }
 
-export async function findEquipoByClienteId(clienteId: number): Promise<EquipoRow | null> {
-  const { rows } = await pool.query<EquipoRow>("SELECT * FROM equipos WHERE cliente_id = $1", [clienteId]);
+export async function findEquipoById(id: number): Promise<EquipoRow | null> {
+  const { rows } = await pool.query<EquipoRow>("SELECT * FROM equipos WHERE id = $1", [id]);
   return rows[0] ?? null;
 }
 
@@ -243,13 +261,16 @@ export interface UpdateVehiculoInput {
   kilometraje?: number;
 }
 
-export async function updateVehiculo(clienteId: number, input: UpdateVehiculoInput): Promise<VehiculoRow | null> {
+// Por id de vehículo, nunca por cliente_id: un cliente con flota tiene varias filas
+// en vehiculos, y actualizar por cliente_id pisaría el kilometraje de todos sus
+// vehículos a la vez.
+export async function updateVehiculo(vehiculoId: number, input: UpdateVehiculoInput): Promise<VehiculoRow | null> {
   const { setClause, values } = buildUpdateClause(input);
-  if (!setClause) return findVehiculoByClienteId(clienteId);
+  if (!setClause) return findVehiculoById(vehiculoId);
 
   const { rows } = await pool.query<VehiculoRow>(
-    `UPDATE vehiculos SET ${setClause} WHERE cliente_id = $${values.length + 1} RETURNING *`,
-    [...values, clienteId],
+    `UPDATE vehiculos SET ${setClause} WHERE id = $${values.length + 1} RETURNING *`,
+    [...values, vehiculoId],
   );
   return rows[0] ?? null;
 }
@@ -261,18 +282,19 @@ export interface UpdateEquipoInput {
   operadora?: string;
 }
 
-export async function updateEquipo(clienteId: number, input: UpdateEquipoInput): Promise<EquipoRow | null> {
+// Por id de equipo, nunca por cliente_id (mismo motivo que updateVehiculo).
+export async function updateEquipo(equipoId: number, input: UpdateEquipoInput): Promise<EquipoRow | null> {
   const { setClause, values } = buildUpdateClause({
     marca_equipo: input.marcaEquipo,
     imei: input.imei,
     numero_chip: input.numeroChip,
     operadora: input.operadora,
   });
-  if (!setClause) return findEquipoByClienteId(clienteId);
+  if (!setClause) return findEquipoById(equipoId);
 
   const { rows } = await pool.query<EquipoRow>(
-    `UPDATE equipos SET ${setClause} WHERE cliente_id = $${values.length + 1} RETURNING *`,
-    [...values, clienteId],
+    `UPDATE equipos SET ${setClause} WHERE id = $${values.length + 1} RETURNING *`,
+    [...values, equipoId],
   );
   return rows[0] ?? null;
 }

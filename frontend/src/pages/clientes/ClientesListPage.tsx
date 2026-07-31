@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { listarClientes } from "../../api/clientes";
 import { useAsync } from "../../hooks/useAsync";
 import { formatFecha } from "../../lib/format";
@@ -8,9 +7,25 @@ import type { EstadoCliente } from "../../lib/types";
 const PAGE_SIZE = 20;
 
 export function ClientesListPage() {
-  const [busqueda, setBusqueda] = useState("");
-  const [estado, setEstado] = useState<EstadoCliente | "">("");
-  const [page, setPage] = useState(1);
+  // Filtros y página en la URL (no en useState local): así, al volver desde la
+  // ficha de un cliente con el botón "Volver" del Layout, se recupera exactamente
+  // la misma página/búsqueda en vez de reiniciar siempre en la página 1.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const busqueda = searchParams.get("busqueda") ?? "";
+  const estado = (searchParams.get("estado") ?? "") as EstadoCliente | "";
+  const page = Number(searchParams.get("page") ?? "1");
+
+  function actualizarParams(cambios: Record<string, string | undefined>): void {
+    const next = new URLSearchParams(searchParams);
+    for (const [clave, valor] of Object.entries(cambios)) {
+      if (valor) next.set(clave, valor);
+      else next.delete(clave);
+    }
+    // replace, no push: cada letra tipeada en la búsqueda no debe apilar una
+    // entrada de historial propia (si no, "Volver" tras entrar a un cliente
+    // solo deshace la última tecla en vez de salir de la lista).
+    setSearchParams(next, { replace: true });
+  }
 
   const { data, loading, error } = useAsync(
     () => listarClientes({ busqueda: busqueda || undefined, estado: estado || undefined, page, pageSize: PAGE_SIZE }),
@@ -36,18 +51,12 @@ export function ClientesListPage() {
           type="text"
           placeholder="Buscar por nombre, apellido o cédula…"
           value={busqueda}
-          onChange={(e) => {
-            setPage(1);
-            setBusqueda(e.target.value);
-          }}
+          onChange={(e) => actualizarParams({ busqueda: e.target.value, page: undefined })}
           className="w-full max-w-sm rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
         />
         <select
           value={estado}
-          onChange={(e) => {
-            setPage(1);
-            setEstado(e.target.value as EstadoCliente | "");
-          }}
+          onChange={(e) => actualizarParams({ estado: e.target.value, page: undefined })}
           className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
         >
           <option value="">Todos los estados</option>
@@ -61,6 +70,7 @@ export function ClientesListPage() {
 
       {data && (
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+          <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="text-slate-500 dark:text-slate-400">
               <tr>
@@ -108,6 +118,7 @@ export function ClientesListPage() {
               ))}
             </tbody>
           </table>
+          </div>
 
           <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3 text-sm text-slate-500 dark:border-slate-800 dark:text-slate-400">
             <span>
@@ -117,7 +128,7 @@ export function ClientesListPage() {
               <button
                 type="button"
                 disabled={page <= 1}
-                onClick={() => setPage((p) => p - 1)}
+                onClick={() => actualizarParams({ page: String(page - 1) })}
                 className="rounded-md border border-slate-300 px-3 py-1 disabled:opacity-40 dark:border-slate-700"
               >
                 Anterior
@@ -125,7 +136,7 @@ export function ClientesListPage() {
               <button
                 type="button"
                 disabled={page >= totalPaginas}
-                onClick={() => setPage((p) => p + 1)}
+                onClick={() => actualizarParams({ page: String(page + 1) })}
                 className="rounded-md border border-slate-300 px-3 py-1 disabled:opacity-40 dark:border-slate-700"
               >
                 Siguiente

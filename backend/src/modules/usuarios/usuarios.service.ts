@@ -1,10 +1,14 @@
 import { badRequest, conflict } from "../../utils/errors";
+import { enviarPasswordTemporal } from "../../utils/mailer";
 import { generateTemporaryPassword, hashPassword } from "../../utils/password";
 import {
   findUsuarioByEmail,
   findUsuarioById,
   insertUsuario,
+  listUsuariosAdminVendedor,
+  updateActivo,
   updatePasswordHash,
+  type ListUsuariosFilter,
   type UsuarioRow,
 } from "./usuarios.repository";
 import type { CrearUsuarioInput } from "./usuarios.schema";
@@ -47,6 +51,25 @@ export async function resetearPassword(usuarioId: number) {
   const passwordTemporal = generateTemporaryPassword();
   const passwordHash = await hashPassword(passwordTemporal);
   await updatePasswordHash(usuarioId, passwordHash);
+  await enviarPasswordTemporal(usuario.email, usuario.nombre, passwordTemporal);
 
   return { usuario: toPublicUsuario(usuario), passwordTemporal };
+}
+
+export async function listarUsuariosAdminVendedor(filter: ListUsuariosFilter) {
+  const usuarios = await listUsuariosAdminVendedor(filter);
+  return usuarios.map(toPublicUsuario);
+}
+
+export async function actualizarActivoUsuario(usuarioId: number, activo: boolean, usuarioActualId: number) {
+  if (usuarioId === usuarioActualId && !activo) {
+    throw badRequest("No podés desactivar tu propia cuenta");
+  }
+
+  const usuario = await updateActivo(usuarioId, activo);
+  if (!usuario) {
+    throw badRequest("El usuario no existe");
+  }
+
+  return toPublicUsuario(usuario);
 }

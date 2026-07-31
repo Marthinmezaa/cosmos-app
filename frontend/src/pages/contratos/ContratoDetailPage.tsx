@@ -78,33 +78,35 @@ export function ContratoDetailPage() {
         <h2 className="border-b border-slate-100 px-4 py-3 text-sm font-semibold text-slate-900 dark:border-slate-800 dark:text-white">
           Cuotas
         </h2>
-        <table className="w-full text-left text-sm">
-          <thead className="text-slate-500 dark:text-slate-400">
-            <tr>
-              <th className="px-4 py-2 font-medium">#</th>
-              <th className="px-4 py-2 font-medium">Vencimiento</th>
-              <th className="px-4 py-2 font-medium">Pago</th>
-              <th className="px-4 py-2 font-medium">Monto</th>
-              <th className="px-4 py-2 font-medium">Estado</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-            {cuotas.map((cuota) => {
-              const estado = estadoCuota(cuota);
-              return (
-                <tr key={cuota.id}>
-                  <td className="px-4 py-2">{cuota.numeroCuota}</td>
-                  <td className="px-4 py-2">{formatFecha(cuota.fechaVencimiento)}</td>
-                  <td className="px-4 py-2">{cuota.fechaPago ? formatFecha(cuota.fechaPago) : "—"}</td>
-                  <td className="px-4 py-2">{formatGuaranies(cuota.montoPagado ?? cuota.montoACobrar)}</td>
-                  <td className="px-4 py-2">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${estado.className}`}>{estado.label}</span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="text-slate-500 dark:text-slate-400">
+              <tr>
+                <th className="px-4 py-2 font-medium">#</th>
+                <th className="px-4 py-2 font-medium">Vencimiento</th>
+                <th className="px-4 py-2 font-medium">Pago</th>
+                <th className="px-4 py-2 font-medium">Monto</th>
+                <th className="px-4 py-2 font-medium">Estado</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {cuotas.map((cuota) => {
+                const estado = estadoCuota(cuota);
+                return (
+                  <tr key={cuota.id}>
+                    <td className="px-4 py-2">{cuota.numeroCuota}</td>
+                    <td className="px-4 py-2">{formatFecha(cuota.fechaVencimiento)}</td>
+                    <td className="px-4 py-2">{cuota.fechaPago ? formatFecha(cuota.fechaPago) : "—"}</td>
+                    <td className="px-4 py-2">{formatGuaranies(cuota.montoPagado ?? cuota.montoACobrar)}</td>
+                    <td className="px-4 py-2">
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${estado.className}`}>{estado.label}</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       {hayPendientes && (

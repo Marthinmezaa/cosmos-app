@@ -194,6 +194,7 @@ export function CajaPage() {
 
       {data && (
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+          <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="text-slate-500 dark:text-slate-400">
               <tr>
@@ -233,6 +234,7 @@ export function CajaPage() {
               ))}
             </tbody>
           </table>
+          </div>
 
           <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3 text-sm text-slate-500 dark:border-slate-800 dark:text-slate-400">
             <span>

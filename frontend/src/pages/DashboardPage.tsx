@@ -31,30 +31,36 @@ function CuotasTable({ cuotas, vacioLabel }: { cuotas: CuotaProxima[]; vacioLabe
   }
 
   return (
-    <table className="w-full text-left text-sm">
-      <thead className="text-slate-500 dark:text-slate-400">
-        <tr>
-          <th className="px-4 py-2 font-medium">Cliente</th>
-          <th className="px-4 py-2 font-medium">Cuota</th>
-          <th className="px-4 py-2 font-medium">Vence</th>
-          <th className="px-4 py-2 font-medium">Monto</th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-        {cuotas.map((cuota) => (
-          <tr key={cuota.cuotaId}>
-            <td className="px-4 py-2">
-              <Link to={`/clientes/${cuota.clienteId}`} className="text-purple-600 hover:underline dark:text-purple-400">
-                {cuota.clienteNombre}
-              </Link>
-            </td>
-            <td className="px-4 py-2">#{cuota.numeroCuota}</td>
-            <td className="px-4 py-2">{formatFecha(cuota.fechaVencimiento)}</td>
-            <td className="px-4 py-2">{formatGuaranies(cuota.montoACobrar)}</td>
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-sm">
+        <thead className="text-slate-500 dark:text-slate-400">
+          <tr>
+            <th className="whitespace-nowrap px-4 py-2 font-medium">Cliente</th>
+            <th className="whitespace-nowrap px-4 py-2 font-medium">Cuota</th>
+            <th className="whitespace-nowrap px-4 py-2 font-medium">Vence</th>
+            <th className="whitespace-nowrap px-4 py-2 font-medium">Monto</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          {cuotas.map((cuota) => (
+            <tr key={cuota.cuotaId}>
+              <td className="px-4 py-2">
+                <Link
+                  to={`/clientes/${cuota.clienteId}`}
+                  title={cuota.clienteNombre}
+                  className="block max-w-[9rem] truncate text-purple-600 hover:underline sm:max-w-[14rem] md:max-w-none dark:text-purple-400"
+                >
+                  {cuota.clienteNombre}
+                </Link>
+              </td>
+              <td className="whitespace-nowrap px-4 py-2">#{cuota.numeroCuota}</td>
+              <td className="whitespace-nowrap px-4 py-2">{formatFecha(cuota.fechaVencimiento)}</td>
+              <td className="whitespace-nowrap px-4 py-2">{formatGuaranies(cuota.montoACobrar)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -64,38 +70,44 @@ function ClientesEnMoraTable({ clientes }: { clientes: ClienteEnMora[] }) {
   }
 
   return (
-    <table className="w-full text-left text-sm">
-      <thead className="text-slate-500 dark:text-slate-400">
-        <tr>
-          <th className="px-4 py-2 font-medium">Cliente</th>
-          <th className="px-4 py-2 font-medium">Cuota vencida</th>
-          <th className="px-4 py-2 font-medium">Meses en mora</th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-        {clientes.map((cliente) => (
-          <tr key={cliente.cuotaId}>
-            <td className="px-4 py-2">
-              <Link to={`/clientes/${cliente.clienteId}`} className="text-purple-600 hover:underline dark:text-purple-400">
-                {cliente.clienteNombre}
-              </Link>
-            </td>
-            <td className="px-4 py-2">{formatFecha(cliente.fechaVencimiento)}</td>
-            <td className="px-4 py-2">
-              <span
-                className={
-                  cliente.alerta
-                    ? "rounded-full bg-red-100 px-2 py-0.5 font-medium text-red-700 dark:bg-red-900/40 dark:text-red-300"
-                    : "text-slate-700 dark:text-slate-300"
-                }
-              >
-                {cliente.mesesMora}
-              </span>
-            </td>
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-sm">
+        <thead className="text-slate-500 dark:text-slate-400">
+          <tr>
+            <th className="whitespace-nowrap px-4 py-2 font-medium">Cliente</th>
+            <th className="whitespace-nowrap px-4 py-2 font-medium">Cuota vencida</th>
+            <th className="whitespace-nowrap px-4 py-2 font-medium">Meses en mora</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          {clientes.map((cliente) => (
+            <tr key={cliente.cuotaId}>
+              <td className="px-4 py-2">
+                <Link
+                  to={`/clientes/${cliente.clienteId}`}
+                  title={cliente.clienteNombre}
+                  className="block max-w-[9rem] truncate text-purple-600 hover:underline sm:max-w-[14rem] md:max-w-none dark:text-purple-400"
+                >
+                  {cliente.clienteNombre}
+                </Link>
+              </td>
+              <td className="whitespace-nowrap px-4 py-2">{formatFecha(cliente.fechaVencimiento)}</td>
+              <td className="whitespace-nowrap px-4 py-2">
+                <span
+                  className={
+                    cliente.alerta
+                      ? "rounded-full bg-red-100 px-2 py-0.5 font-medium text-red-700 dark:bg-red-900/40 dark:text-red-300"
+                      : "text-slate-700 dark:text-slate-300"
+                  }
+                >
+                  {cliente.mesesMora}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

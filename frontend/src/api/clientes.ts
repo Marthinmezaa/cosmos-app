@@ -43,12 +43,16 @@ export function actualizarCliente(id: number, input: ActualizarClienteInput): Pr
 
 export type ActualizarVehiculoInput = Partial<Omit<Vehiculo, "id">>;
 
-export function actualizarVehiculo(clienteId: number, input: ActualizarVehiculoInput): Promise<Vehiculo> {
-  return apiRequest<Vehiculo>(`/api/clientes/${clienteId}/vehiculo`, { method: "PATCH", body: input });
+export function actualizarVehiculo(
+  clienteId: number,
+  vehiculoId: number,
+  input: ActualizarVehiculoInput,
+): Promise<Vehiculo> {
+  return apiRequest<Vehiculo>(`/api/clientes/${clienteId}/vehiculos/${vehiculoId}`, { method: "PATCH", body: input });
 }
 
 export type ActualizarEquipoInput = Partial<Omit<Equipo, "id">>;
 
-export function actualizarEquipo(clienteId: number, input: ActualizarEquipoInput): Promise<Equipo> {
-  return apiRequest<Equipo>(`/api/clientes/${clienteId}/equipo`, { method: "PATCH", body: input });
+export function actualizarEquipo(clienteId: number, equipoId: number, input: ActualizarEquipoInput): Promise<Equipo> {
+  return apiRequest<Equipo>(`/api/clientes/${clienteId}/equipos/${equipoId}`, { method: "PATCH", body: input });
 }
